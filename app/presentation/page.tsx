@@ -2,25 +2,53 @@
 
 import { useEffect, useState } from "react";
 
-export default function PresentationsPage() {
-    const [presentations, setPresentations] =
-        useState<string[]>([]);
+export default function PresentationPage() {
+    const [slides, setSlides] = useState<string[]>([]);
 
     useEffect(() => {
-        const saved =
-            JSON.parse(
-                localStorage.getItem("presentations") || "[]"
+        async function loadSlides() {
+            const fileName =
+                localStorage.getItem("uploadedFile") ||
+                "Document.pdf";
+
+            const saved =
+                JSON.parse(
+                    localStorage.getItem("presentations") || "[]"
+                );
+
+            if (!saved.includes(fileName)) {
+                saved.push(fileName);
+
+                localStorage.setItem(
+                    "presentations",
+                    JSON.stringify(saved)
+                );
+            }
+
+            const response = await fetch(
+                `/api/slides?file=${encodeURIComponent(fileName)}`
             );
 
-        setPresentations(saved);
+            const data = await response.json();
+
+            console.log(data);
+
+            setSlides(data);
+        }
+
+        loadSlides();
     }, []);
 
     return (
         <div>
-            <h1>Saved Presentations</h1>
+            <h1>Generated Presentation</h1>
 
-            {presentations.map((presentation, index) => (
-                <p key={index}>{presentation}</p>
+            {slides.map((slide, index) => (
+                <div key={index}>
+                    <h2>
+                        Slide {index + 1}: {slide}
+                    </h2>
+                </div>
             ))}
         </div>
     );

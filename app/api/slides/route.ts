@@ -1,4 +1,4 @@
-import { SlideGenerator } from "./SlideGenerator";
+import { execSync } from "child_process";
 
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
@@ -8,9 +8,11 @@ export async function GET(request: Request) {
 
   const title = file.replace(".pdf", "");
 
-  const generator = new SlideGenerator();
+  const output = execSync(
+    `python3 python/slide_generator.py "${title}"`
+  ).toString();
 
-  const slides = generator.generate(title);
+  const slides = JSON.parse(output);
 
   return Response.json(slides);
 }

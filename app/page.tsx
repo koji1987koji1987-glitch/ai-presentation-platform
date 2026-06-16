@@ -1,11 +1,40 @@
-export default function Home() {
+"use client";
+
+import { useState } from "react";
+import { useRouter } from "next/navigation";
+
+export default function UploadPage() {
+  const [fileName, setFileName] = useState("");
+  const router = useRouter();
+
+  function generatePresentation() {
+    if (!fileName) return;
+
+    localStorage.setItem("uploadedFile", fileName);
+
+    router.push("/presentation");
+  }
+
   return (
     <div>
-      <h1>AI Presentation Generator</h1>
+      <h1>Upload Document</h1>
 
-      <p>
-        Upload reports and automatically generate presentations.
-      </p>
+      <input
+        type="file"
+        onChange={(event) => {
+          const file = event.target.files?.[0];
+
+          if (file) {
+            setFileName(file.name);
+          }
+        }}
+      />
+
+      <p>{fileName}</p>
+
+      <button onClick={generatePresentation}>
+        Generate Presentation
+      </button>
     </div>
   );
 }
