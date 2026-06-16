@@ -2,52 +2,46 @@
 
 import { useEffect, useState } from "react";
 
+type Slide = {
+    title: string;
+    content: string[];
+};
+
 export default function PresentationPage() {
-    const [slides, setSlides] = useState<string[]>([]);
+    const [slides, setSlides] = useState<Slide[]>([]);
 
     useEffect(() => {
-        async function loadSlides() {
-            const content =
-                localStorage.getItem("uploadedContent") ||
-                "No content";
+        const savedSlides =
+            localStorage.getItem("slides");
 
-            const saved =
-                JSON.parse(
-                    localStorage.getItem("presentations") || "[]"
-                );
-
-            if (!saved.includes("Generated Presentation")) {
-                saved.push("Generated Presentation");
-
-                localStorage.setItem(
-                    "presentations",
-                    JSON.stringify(saved)
-                );
-            }
-
-            const response = await fetch(
-                `/api/slides?content=${encodeURIComponent(content)}`
-            );
-
-            const data = await response.json();
-
-            console.log(data);
-
-            setSlides(data);
+        if (savedSlides) {
+            setSlides(JSON.parse(savedSlides));
         }
-
-        loadSlides();
     }, []);
 
     return (
-        <div>
+        <div style={{ padding: "20px" }}>
             <h1>Generated Presentation</h1>
 
             {slides.map((slide, index) => (
-                <div key={index}>
+                <div
+                    key={index}
+                    style={{
+                        border: "1px solid #ccc",
+                        padding: "20px",
+                        marginBottom: "20px",
+                        borderRadius: "8px",
+                    }}
+                >
                     <h2>
-                        Slide {index + 1}: {slide}
+                        Slide {index + 1}: {slide.title}
                     </h2>
+
+                    <ul>
+                        {slide.content.map((point, i) => (
+                            <li key={i}>{point}</li>
+                        ))}
+                    </ul>
                 </div>
             ))}
         </div>
