@@ -1,10 +1,19 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 export default function UploadPage() {
     const [fileName, setFileName] = useState("");
+    const router = useRouter();
+
+    function generatePresentation() {
+        if (!fileName) return;
+
+        localStorage.setItem("uploadedFile", fileName);
+
+        router.push("/presentation");
+    }
 
     return (
         <div>
@@ -12,21 +21,27 @@ export default function UploadPage() {
 
             <input
                 type="file"
-                onChange={(event) => {
-                    const name =
-                        event.target.files?.[0]?.name || "";
+                onChange={async (event) => {
+                    const file = event.target.files?.[0];
 
-                    setFileName(name);
+                    if (file) {
+                        setFileName(file.name);
 
-                    localStorage.setItem("uploadedFile", name);
+                        const text = await file.text();
+
+                        localStorage.setItem(
+                            "uploadedContent",
+                            text
+                        );
+                    }
                 }}
             />
 
             <p>{fileName}</p>
 
-            <Link href="/presentation">
-                <button>Generate Presentation</button>
-            </Link>
+            <button onClick={generatePresentation}>
+                Generate Presentation
+            </button>
         </div>
     );
 }

@@ -3,13 +3,11 @@ import { execSync } from "child_process";
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
 
-  const file =
-    searchParams.get("file") || "Document.pdf";
-
-  const title = file.replace(".pdf", "");
+  const content =
+    searchParams.get("content") || "";
 
   const output = execSync(
-    `python3 python/slide_generator.py "${title}"`
+    `python3 python/slide_generator.py "${content}"`
   ).toString();
 
   const slides = JSON.parse(output);

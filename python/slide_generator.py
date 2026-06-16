@@ -1,31 +1,36 @@
 import json
 import sys
 
-title = sys.argv[1]
+content = sys.argv[1]
 
-if "research" in title.lower():
+slides = []
+
+content = " ".join(content.split())
+
+checks = [
+    ("problem", "Problem Statement"),
+    ("background", "Background"),
+    ("presentation editor", "Presentation Editor"),
+    ("export layer", "Export Layer"),
+    ("expected outcome", "Expected Outcome")
+]
+
+for keyword, slide in checks:
+    if keyword in content.lower():
+        slides.append(slide)
+
+slides = list(dict.fromkeys(slides))
+
+if not slides:
     slides = [
-        title,
-        "Literature Review",
-        "Methodology",
-        "Results",
+        "Introduction",
+        "Key Insights",
+        "Recommendations",
         "Conclusion"
     ]
-elif "business" in title.lower():
-    slides = [
-        title,
-        "Market Analysis",
-        "Strategy",
-        "Financial Plan",
-        "Conclusion"
-    ]
-else:
-    slides = [
-        title,
-        "Overview",
-        "Analysis",
-        "Key Findings",
-        "Conclusion"
-    ]
+
+print("DEBUG:")
+print(content[:300])
+print("----------------")
 
 print(json.dumps(slides))

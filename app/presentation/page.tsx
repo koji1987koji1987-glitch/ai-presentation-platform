@@ -7,17 +7,17 @@ export default function PresentationPage() {
 
     useEffect(() => {
         async function loadSlides() {
-            const fileName =
-                localStorage.getItem("uploadedFile") ||
-                "Document.pdf";
+            const content =
+                localStorage.getItem("uploadedContent") ||
+                "No content";
 
             const saved =
                 JSON.parse(
                     localStorage.getItem("presentations") || "[]"
                 );
 
-            if (!saved.includes(fileName)) {
-                saved.push(fileName);
+            if (!saved.includes("Generated Presentation")) {
+                saved.push("Generated Presentation");
 
                 localStorage.setItem(
                     "presentations",
@@ -26,7 +26,7 @@ export default function PresentationPage() {
             }
 
             const response = await fetch(
-                `/api/slides?file=${encodeURIComponent(fileName)}`
+                `/api/slides?content=${encodeURIComponent(content)}`
             );
 
             const data = await response.json();
