@@ -58,7 +58,7 @@ export default function PresentationPage() {
     const [slides, setSlides] = useState<Slide[]>([]);
     const [isExporting, setIsExporting] = useState(false);
     const [activeTheme, setActiveTheme] = useState<ThemeKey>("slate");
-    
+
     const router = useRouter();
     const colors = themePalettes[activeTheme];
 
@@ -160,12 +160,12 @@ export default function PresentationPage() {
             const a = document.createElement("a");
             a.style.display = "none";
             a.href = url;
-            
+
             const uploadedName = localStorage.getItem("uploadedFile") || "presentation.pdf";
             const pptxName = uploadedName.toLowerCase().endsWith(".pdf")
                 ? uploadedName.substring(0, uploadedName.length - 4) + ".pptx"
                 : uploadedName + ".pptx";
-                
+
             a.download = pptxName;
             document.body.appendChild(a);
             a.click();
@@ -195,7 +195,8 @@ export default function PresentationPage() {
             transition: "all 0.3s ease"
         }}>
             {/* CSS Print Stylesheet */}
-            <style dangerouslySetInnerHTML={{ __html: `
+            <style dangerouslySetInnerHTML={{
+                __html: `
                 @media print {
                     body {
                         background-color: #ffffff !important;
@@ -357,7 +358,7 @@ export default function PresentationPage() {
                                         padding: "4px 8px"
                                     }}
                                 />
-                                
+
                                 <div className="no-print" style={{ display: "flex", gap: "8px" }}>
                                     <button
                                         disabled={index === 0}
@@ -448,7 +449,7 @@ export default function PresentationPage() {
                                         content={slide.content}
                                         colors={colors}
                                     />
-                                    
+
                                     {/* Edit Recommendation Box */}
                                     <div className="no-print" style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
                                         <label style={{ fontSize: "0.8rem", fontWeight: 700, color: colors.muted }}>
@@ -472,7 +473,7 @@ export default function PresentationPage() {
                             </div>
                         </div>
                     ))}
-                    
+
                     <button
                         className="no-print"
                         onClick={handleAddSlide}
@@ -499,7 +500,7 @@ export default function PresentationPage() {
 // Interactive CSS Diagram Generator Widget
 function DiagramWidget({ suggestion, content, colors }: { suggestion: string; content: string[]; colors: any }) {
     const text = (suggestion || "").toLowerCase();
-    
+
     // 1. Process Flow / Timeline
     if (text.includes("process") || text.includes("timeline") || text.includes("flowchart") || text.includes("workflow") || text.includes("step")) {
         return (
@@ -533,7 +534,7 @@ function DiagramWidget({ suggestion, content, colors }: { suggestion: string; co
             </div>
         );
     }
-    
+
     // 2. Matrix / Quad categories
     if (text.includes("matrix") || text.includes("compare") || text.includes("grid") || text.includes("quadrant") || text.includes("table")) {
         return (
