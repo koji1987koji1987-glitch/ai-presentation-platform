@@ -69,13 +69,39 @@ def rule_based_fallback(text):
             if part.strip():
                 sentences.append(part.strip())
                 
+    # Extractive summarizer helper: rank sentences by keyword term frequency
+    import re
+    from collections import Counter
+    words = re.findall(r'\b\w{4,15}\b', text.lower())
+    stop_words = {
+        "with", "they", "that", "this", "these", "those", "have", "from",
+        "your", "will", "would", "their", "there", "about", "which", "when",
+        "where", "what", "some", "more", "then", "them", "thence", "their"
+    }
+    filtered_words = [w for w in words if w not in stop_words]
+    word_freq = Counter(filtered_words)
+
+    def score_sentences(s_list):
+        scored = []
+        for s in s_list:
+            s_words = re.findall(r'\b\w{4,15}\b', s.lower())
+            score = sum(word_freq.get(w, 0) for w in s_words if w not in stop_words)
+            norm_score = score / max(1, len(s_words))
+            scored.append((s, norm_score))
+        return scored
+                
     chunk_size = max(2, len(sentences) // 5)
     slides = []
     
     for idx, title in enumerate(slide_titles):
         start = idx * chunk_size
         end = start + chunk_size
-        points = [s for s in sentences[start:end] if len(s) > 10][:4]
+        chunk_sentences = sentences[start:end]
+        
+        # Rank sentences in this section and pick the top 4 most important
+        scored = score_sentences(chunk_sentences)
+        scored.sort(key=lambda x: x[1], reverse=True)
+        points = [item[0] for item in scored[:4]]
         
         if not points:
             points = [f"Key summary point {j+1} extracted from the document." for j in range(3)]
@@ -112,17 +138,22 @@ def generate_slides(text):
         
         prompt = (
             "You are a professional presentation generation system. "
-            "Your task is to summarize the document content below and output a structured presentation "
+            "Your task is to analyze the document content below, identify the main themes, and output a structured presentation "
             "as a JSON object containing a 'slides' key which holds an array of slide objects. "
-            "Generate between 5 and 10 slides that represent a comprehensive and logical flow of the document. "
+            "You should generate between 5 and 10 slides that represent a comprehensive and logical flow of the document. "
+            "First, analyze the contents and create custom, descriptive titles for each slide based on the specific topics "
+            "covered in the document (do not use generic titles like 'Slide 1' or 'Overview' if you can make them more descriptive, "
+            "e.g., 'Challenges in Cloud Migrations' or 'Q3 Financial Performance').\n"
+            "Do not just copy blocks of text. Instead, summarize and recompose the text under these custom slide titles into "
+            "brief, high-impact bullet points.\n"
             "Each slide object in the array MUST have the following keys:\n"
-            "- 'title': The slide title.\n"
-            "- 'content': An array of 3 to 5 concise and meaningful bullet points.\n"
+            "- 'title': A custom, descriptive slide title based on your analysis.\n"
+            "- 'content': An array of 3 to 5 concise and meaningful bullet points summarizing the insights for that slide.\n"
             "- 'visual_suggestion': A clear recommendation for a diagram, flowchart, matrix, chart, or image that "
             "visually explains this slide's content.\n\n"
             f"Document Content:\n{text[:12000]}\n\n"
             "Return only valid JSON matching this schema: "
-            '{"slides": [{"title": "Title", "content": ["point 1", "point 2"], "visual_suggestion": "Description..."}]}'
+            '{"slides": [{"title": "Custom Slide Title", "content": ["point 1", "point 2"], "visual_suggestion": "Description..."}]}'
         )
         
         response = client.chat.completions.create(

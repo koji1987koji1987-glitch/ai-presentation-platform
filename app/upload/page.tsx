@@ -9,7 +9,7 @@ export default function UploadPage() {
     const [promptText, setPromptText] = useState("");
     const [isGenerating, setIsGenerating] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
-    
+
     const router = useRouter();
 
     async function generatePresentation() {

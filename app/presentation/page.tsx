@@ -501,14 +501,19 @@ export default function PresentationPage() {
 function DiagramWidget({ suggestion, content, colors }: { suggestion: string; content: string[]; colors: any }) {
     const text = (suggestion || "").toLowerCase();
 
-    // 1. Process Flow / Timeline
-    if (text.includes("process") || text.includes("timeline") || text.includes("flowchart") || text.includes("workflow") || text.includes("step")) {
+    // Helper to truncate text for clean layout sizing
+    const truncate = (str: string, len: number) => {
+        return str.length > len ? str.slice(0, len) + "..." : str;
+    };
+
+    // 1. Process Flow / Business Workflow
+    if (text.includes("process") || text.includes("workflow") || text.includes("flowchart")) {
         return (
             <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%" }}>
-                <div style={{ fontSize: "0.8rem", fontWeight: 700, color: colors.accent, textTransform: "uppercase" }}>
-                    🔄 Flow Sequence Diagram
+                <div style={{ fontSize: "0.8rem", fontWeight: 700, color: colors.accent, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    🔄 Process Flow / Workflow
                 </div>
-                <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "10px" }}>
+                <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "10px", padding: "10px 0" }}>
                     {content.map((point, idx) => (
                         <div key={idx} style={{ display: "flex", alignItems: "center", gap: "10px" }}>
                             <div style={{
@@ -519,11 +524,12 @@ function DiagramWidget({ suggestion, content, colors }: { suggestion: string; co
                                 fontSize: "0.85rem",
                                 color: colors.text,
                                 fontWeight: 600,
-                                maxWidth: "160px",
-                                textAlign: "center"
+                                maxWidth: "150px",
+                                textAlign: "center",
+                                boxShadow: "0 2px 4px rgba(0,0,0,0.02)"
                             }}>
-                                <span style={{ color: colors.accent, marginRight: "4px" }}>{idx + 1}.</span>
-                                {point.length > 30 ? point.slice(0, 30) + "..." : point}
+                                <span style={{ color: colors.accent, marginRight: "4px" }}>Step {idx + 1}:</span>
+                                {truncate(point, 30)}
                             </div>
                             {idx < content.length - 1 && (
                                 <span style={{ fontSize: "1.2rem", color: colors.accent, fontWeight: "bold" }}>➔</span>
@@ -535,45 +541,136 @@ function DiagramWidget({ suggestion, content, colors }: { suggestion: string; co
         );
     }
 
-    // 2. Matrix / Quad categories
-    if (text.includes("matrix") || text.includes("compare") || text.includes("grid") || text.includes("quadrant") || text.includes("table")) {
+    // 2. Timeline
+    if (text.includes("timeline") || text.includes("schedule") || text.includes("history")) {
         return (
             <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%" }}>
-                <div style={{ fontSize: "0.8rem", fontWeight: 700, color: colors.accent, textTransform: "uppercase" }}>
-                    📊 Widescreen Comparison Grid
+                <div style={{ fontSize: "0.8rem", fontWeight: 700, color: colors.accent, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    📅 Chronological Timeline
                 </div>
                 <div style={{
-                    display: "grid",
-                    gridTemplateColumns: "1fr 1fr",
-                    gap: "12px"
+                    position: "relative",
+                    padding: "20px 0",
+                    display: "flex",
+                    alignItems: "center",
+                    width: "100%",
+                    minHeight: "120px",
+                    overflowX: "auto"
                 }}>
-                    {content.slice(0, 4).map((point, idx) => (
-                        <div key={idx} style={{
-                            backgroundColor: colors.accentLight,
-                            borderRadius: "8px",
-                            padding: "12px",
-                            fontSize: "0.85rem",
-                            color: colors.text,
-                            borderLeft: `4px solid ${colors.accent}`,
-                            border: `1px solid ${colors.border}`
-                        }}>
-                            <div style={{ fontWeight: 700, color: colors.accent, marginBottom: "4px" }}>
-                                Block {idx + 1}
+                    <div style={{
+                        position: "absolute",
+                        left: 0,
+                        right: 0,
+                        height: "4px",
+                        backgroundColor: colors.accent,
+                        borderRadius: "2px",
+                        zIndex: 1
+                    }} />
+                    
+                    <div style={{ display: "flex", justifyContent: "space-between", width: "100%", zIndex: 2, padding: "0 10px" }}>
+                        {content.map((point, idx) => (
+                            <div key={idx} style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center",
+                                position: "relative",
+                                width: "120px"
+                            }}>
+                                <div style={{
+                                    width: "16px",
+                                    height: "16px",
+                                    borderRadius: "50%",
+                                    backgroundColor: colors.cardBg,
+                                    border: `4px solid ${colors.accent}`,
+                                    marginBottom: "10px",
+                                    boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+                                }} />
+                                
+                                <div style={{
+                                    backgroundColor: colors.accentLight,
+                                    border: `1px solid ${colors.border}`,
+                                    borderRadius: "6px",
+                                    padding: "6px 8px",
+                                    fontSize: "0.75rem",
+                                    textAlign: "center",
+                                    color: colors.text
+                                }}>
+                                    <div style={{ fontWeight: 700, color: colors.accent, marginBottom: "2px" }}>
+                                        Point {idx + 1}
+                                    </div>
+                                    {truncate(point, 24)}
+                                </div>
                             </div>
-                            {point.length > 45 ? point.slice(0, 45) + "..." : point}
-                        </div>
-                    ))}
+                        ))}
+                    </div>
                 </div>
             </div>
         );
     }
 
-    // 3. Central Node / Relationship map
-    if (text.includes("mind") || text.includes("central") || text.includes("relationship") || text.includes("architecture") || text.includes("structure")) {
+    // 3. Organizational Chart / Hierarchy
+    if (text.includes("organ") || text.includes("hierarchy") || text.includes("chart")) {
         return (
             <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%" }}>
-                <div style={{ fontSize: "0.8rem", fontWeight: 700, color: colors.accent, textTransform: "uppercase" }}>
-                    🧠 Hub-and-Spoke Diagram
+                <div style={{ fontSize: "0.8rem", fontWeight: 700, color: colors.accent, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    🏢 Organizational Chart / Hierarchy
+                </div>
+                <div style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: "10px",
+                    width: "100%"
+                }}>
+                    <div style={{
+                        backgroundColor: colors.accent,
+                        color: "#ffffff",
+                        borderRadius: "8px",
+                        padding: "8px 16px",
+                        fontWeight: "bold",
+                        fontSize: "0.85rem",
+                        boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+                    }}>
+                        Root Level
+                    </div>
+                    <div style={{ width: "2px", height: "15px", backgroundColor: colors.accent }} />
+                    <div style={{ display: "flex", justifyContent: "center", gap: "16px", width: "100%" }}>
+                        {content.slice(0, 3).map((point, idx) => (
+                            <div key={idx} style={{
+                                display: "flex",
+                                flexDirection: "column",
+                                alignItems: "center"
+                            }}>
+                                <div style={{
+                                    backgroundColor: colors.accentLight,
+                                    border: `1px solid ${colors.accent}30`,
+                                    borderRadius: "8px",
+                                    padding: "8px 12px",
+                                    fontSize: "0.8rem",
+                                    color: colors.text,
+                                    textAlign: "center",
+                                    maxWidth: "110px",
+                                    boxShadow: "0 1px 3px rgba(0,0,0,0.02)"
+                                }}>
+                                    <div style={{ fontWeight: 700, color: colors.accent, fontSize: "0.75rem", marginBottom: "2px" }}>
+                                        Division {idx + 1}
+                                    </div>
+                                    {truncate(point, 24)}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // 4. Mind Map
+    if (text.includes("mind") || text.includes("concept")) {
+        return (
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%" }}>
+                <div style={{ fontSize: "0.8rem", fontWeight: 700, color: colors.accent, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    🧠 Concept Mind Map
                 </div>
                 <div style={{
                     display: "flex",
@@ -593,7 +690,7 @@ function DiagramWidget({ suggestion, content, colors }: { suggestion: string; co
                         zIndex: 2,
                         boxShadow: `0 4px 6px -1px ${colors.accent}40`
                     }}>
-                        Core Focus
+                        Core Concept
                     </div>
                     <div style={{
                         display: "flex",
@@ -613,10 +710,211 @@ function DiagramWidget({ suggestion, content, colors }: { suggestion: string; co
                                 textAlign: "center",
                                 maxWidth: "120px"
                             }}>
-                                {point.length > 25 ? point.slice(0, 25) + "..." : point}
+                                {truncate(point, 25)}
                             </div>
                         ))}
                     </div>
+                </div>
+            </div>
+        );
+    }
+
+    // 5. Decision Tree
+    if (text.includes("decision") || text.includes("tree") || text.includes("branch")) {
+        return (
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%" }}>
+                <div style={{ fontSize: "0.8rem", fontWeight: 700, color: colors.accent, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    🌿 Decision Tree Node
+                </div>
+                <div style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    width: "100%"
+                }}>
+                    <div style={{
+                        backgroundColor: colors.accent,
+                        color: "#ffffff",
+                        borderRadius: "6px",
+                        padding: "8px 14px",
+                        fontSize: "0.8rem",
+                        fontWeight: 700
+                    }}>
+                        Condition / Choice
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", width: "60%", position: "relative" }}>
+                        <div style={{ borderLeft: `2px solid ${colors.accent}`, height: "16px" }} />
+                        <div style={{ borderRight: `2px solid ${colors.accent}`, height: "16px" }} />
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", width: "90%" }}>
+                        <div style={{
+                            backgroundColor: colors.accentLight,
+                            border: `1px solid ${colors.accent}40`,
+                            borderRadius: "6px",
+                            padding: "8px",
+                            fontSize: "0.75rem",
+                            maxWidth: "130px",
+                            textAlign: "center"
+                        }}>
+                            <span style={{ fontWeight: "bold", color: "#22c55e", display: "block" }}>[Yes Branch]</span>
+                            {truncate(content[0] || "Execute Action A", 30)}
+                        </div>
+                        <div style={{
+                            backgroundColor: colors.accentLight,
+                            border: `1px solid ${colors.accent}40`,
+                            borderRadius: "6px",
+                            padding: "8px",
+                            fontSize: "0.75rem",
+                            maxWidth: "130px",
+                            textAlign: "center"
+                        }}>
+                            <span style={{ fontWeight: "bold", color: "#ef4444", display: "block" }}>[No Branch]</span>
+                            {truncate(content[1] || "Execute Action B", 30)}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // 6. System Architecture
+    if (text.includes("architecture") || text.includes("infrastructure") || text.includes("system")) {
+        return (
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%" }}>
+                <div style={{ fontSize: "0.8rem", fontWeight: 700, color: colors.accent, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    ⚙️ System Architecture (3-Tier)
+                </div>
+                <div style={{
+                    display: "flex",
+                    flexDirection: "column",
+                    alignItems: "center",
+                    gap: "8px",
+                    width: "100%"
+                }}>
+                    <div style={{
+                        backgroundColor: colors.accentLight,
+                        border: `1px solid ${colors.accent}30`,
+                        borderRadius: "6px",
+                        padding: "6px 12px",
+                        fontSize: "0.75rem",
+                        width: "80%",
+                        textAlign: "center"
+                    }}>
+                        🖥️ Client UI: {truncate(content[0] || "Frontend layer", 35)}
+                    </div>
+                    <span style={{ fontSize: "1rem", color: colors.accent }}>↓</span>
+                    <div style={{
+                        backgroundColor: colors.accent,
+                        color: "#ffffff",
+                        borderRadius: "6px",
+                        padding: "6px 12px",
+                        fontSize: "0.75rem",
+                        width: "80%",
+                        textAlign: "center"
+                    }}>
+                        🚀 App API Server: {truncate(content[1] || "Backend routing", 35)}
+                    </div>
+                    <span style={{ fontSize: "1rem", color: colors.accent }}>↓</span>
+                    <div style={{
+                        backgroundColor: colors.accentLight,
+                        border: `1px solid ${colors.border}`,
+                        borderRadius: "6px",
+                        padding: "6px 12px",
+                        fontSize: "0.75rem",
+                        width: "80%",
+                        textAlign: "center"
+                    }}>
+                        🗄️ Storage DB: {truncate(content[2] || "Database records", 35)}
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // 7. Data Relationship / ERD
+    if (text.includes("relationship") || text.includes("database") || text.includes("data") || text.includes("erd")) {
+        return (
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%" }}>
+                <div style={{ fontSize: "0.8rem", fontWeight: 700, color: colors.accent, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    📊 Entity-Relationship Diagram (ERD)
+                </div>
+                <div style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    width: "100%",
+                    gap: "10px",
+                    padding: "6px 0"
+                }}>
+                    <div style={{
+                        backgroundColor: colors.cardBg,
+                        border: `1px solid ${colors.border}`,
+                        borderRadius: "6px",
+                        fontSize: "0.7rem",
+                        width: "45%"
+                    }}>
+                        <div style={{ backgroundColor: colors.accent, color: "#ffffff", padding: "4px 8px", fontWeight: "bold", borderTopLeftRadius: "5px", borderTopRightRadius: "5px" }}>
+                            Entity_A
+                        </div>
+                        <div style={{ padding: "6px", display: "flex", flexDirection: "column", gap: "4px" }}>
+                            <div>🔑 id (PK)</div>
+                            <div>📝 name</div>
+                            <div>📄 desc</div>
+                        </div>
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", flexGrow: 1 }}>
+                        <span style={{ fontSize: "0.7rem", color: colors.accent, fontWeight: "bold" }}>1-to-N</span>
+                        <div style={{ height: "2px", backgroundColor: colors.accent, width: "100%" }} />
+                    </div>
+                    <div style={{
+                        backgroundColor: colors.cardBg,
+                        border: `1px solid ${colors.border}`,
+                        borderRadius: "6px",
+                        fontSize: "0.7rem",
+                        width: "45%"
+                    }}>
+                        <div style={{ backgroundColor: colors.accent, color: "#ffffff", padding: "4px 8px", fontWeight: "bold", borderTopLeftRadius: "5px", borderTopRightRadius: "5px" }}>
+                            Entity_B
+                        </div>
+                        <div style={{ padding: "6px", display: "flex", flexDirection: "column", gap: "4px" }}>
+                            <div>🔑 id (PK)</div>
+                            <div>🔗 fk_id (FK)</div>
+                            <div>📊 value</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        );
+    }
+
+    // 8. Matrix / Quad categories (Default comparator)
+    if (text.includes("matrix") || text.includes("compare") || text.includes("grid") || text.includes("quadrant") || text.includes("table")) {
+        return (
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%" }}>
+                <div style={{ fontSize: "0.8rem", fontWeight: 700, color: colors.accent, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                    📊 Comparison Matrix Grid
+                </div>
+                <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: "12px"
+                }}>
+                    {content.slice(0, 4).map((point, idx) => (
+                        <div key={idx} style={{
+                            backgroundColor: colors.accentLight,
+                            borderRadius: "8px",
+                            padding: "12px",
+                            fontSize: "0.85rem",
+                            color: colors.text,
+                            borderLeft: `4px solid ${colors.accent}`,
+                            border: `1px solid ${colors.border}`
+                        }}>
+                            <div style={{ fontWeight: 700, color: colors.accent, marginBottom: "4px" }}>
+                                Quadrant {idx + 1}
+                            </div>
+                            {truncate(point, 45)}
+                        </div>
+                    ))}
                 </div>
             </div>
         );
@@ -643,7 +941,7 @@ function DiagramWidget({ suggestion, content, colors }: { suggestion: string; co
                 textTransform: "uppercase",
                 letterSpacing: "0.05em"
             }}>
-                <span>💡 Layout Suggestion</span>
+                <span>💡 Layout Recommendation</span>
             </div>
             <p style={{
                 fontSize: "0.95rem",
