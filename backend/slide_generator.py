@@ -212,8 +212,8 @@ def rule_based_fallback(text):
 
 def generate_slides(text):
     api_key = os.environ.get("OPENAI_API_KEY")
-    if not api_key:
-        print("OPENAI_API_KEY not found in environment, running rule-based fallback.", file=sys.stderr)
+    if not api_key or api_key.strip() == "" or "api_key_here" in api_key.lower():
+        print("OPENAI_API_KEY not set or placeholder, running rule-based fallback.", file=sys.stderr)
         return rule_based_fallback(text)
         
     try:
