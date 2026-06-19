@@ -70,7 +70,7 @@ THEME_PALETTES = {
     }
 }
 
-def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate"):
+def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate", x_shift=Inches(0)):
     text = (suggestion or "").lower()
     
     # Helper to truncate text inside shapes
@@ -94,7 +94,7 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate"):
         if diagram_type == "flowchart" and items:
             top_offset = Inches(1.8)
             for i, item in enumerate(items[:4]):
-                shape = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(8.3), top_offset, Inches(3.8), Inches(0.9))
+                shape = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(8.3) + x_shift, top_offset, Inches(3.8), Inches(0.9))
                 shape.fill.solid()
                 shape.fill.fore_color.rgb = RGBColor(*accent_light_rgb)
                 shape.line.color.rgb = RGBColor(*border_rgb)
@@ -112,7 +112,7 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate"):
                 top_offset += Inches(0.9)
                 
                 if i < len(items[:4]) - 1:
-                    arrow = slide.shapes.add_shape(MSO_SHAPE.DOWN_ARROW, Inches(10.1), top_offset, Inches(0.2), Inches(0.2))
+                    arrow = slide.shapes.add_shape(MSO_SHAPE.DOWN_ARROW, Inches(10.1) + x_shift, top_offset, Inches(0.2), Inches(0.2))
                     arrow.fill.solid()
                     arrow.fill.fore_color.rgb = RGBColor(*accent_rgb)
                     arrow.line.fill.background()
@@ -121,20 +121,20 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate"):
 
         # 2. Timeline
         elif diagram_type == "timeline" and items:
-            bar = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(8.5), Inches(1.8), Inches(0.08), Inches(4.3))
+            bar = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(8.5) + x_shift, Inches(1.8), Inches(0.08), Inches(4.3))
             bar.fill.solid()
             bar.fill.fore_color.rgb = RGBColor(*accent_rgb)
             bar.line.fill.background()
             
             top_offset = Inches(1.9)
             for i, item in enumerate(items[:4]):
-                circle = slide.shapes.add_shape(MSO_SHAPE.OVAL, Inches(8.34), top_offset + Inches(0.12), Inches(0.4), Inches(0.4))
+                circle = slide.shapes.add_shape(MSO_SHAPE.OVAL, Inches(8.34) + x_shift, top_offset + Inches(0.12), Inches(0.4), Inches(0.4))
                 circle.fill.solid()
                 circle.fill.fore_color.rgb = RGBColor(255, 255, 255)
                 circle.line.color.rgb = RGBColor(*accent_rgb)
                 circle.line.width = Pt(3)
                 
-                card = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(8.9), top_offset, Inches(3.2), Inches(0.85))
+                card = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(8.9) + x_shift, top_offset, Inches(3.2), Inches(0.85))
                 card.fill.solid()
                 card.fill.fore_color.rgb = RGBColor(*accent_light_rgb)
                 card.line.color.rgb = RGBColor(*border_rgb)
@@ -154,7 +154,7 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate"):
 
         # 3. Organizational Chart / Hierarchy
         elif diagram_type == "org_chart":
-            root = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(9.2), Inches(1.8), Inches(2.0), Inches(0.7))
+            root = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(9.2) + x_shift, Inches(1.8), Inches(2.0), Inches(0.7))
             root.fill.solid()
             root.fill.fore_color.rgb = RGBColor(*accent_rgb)
             root.line.fill.background()
@@ -162,18 +162,18 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate"):
             p_root.text = data.get("root", "Root Level")
             apply_text_styling(p_root, font_name="Arial", size_pt=11, color_rgb=text_light_rgb, bold=True)
             
-            line = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(10.17), Inches(2.5), Inches(0.05), Inches(0.5))
+            line = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(10.17) + x_shift, Inches(2.5), Inches(0.05), Inches(0.5))
             line.fill.solid()
             line.fill.fore_color.rgb = RGBColor(*accent_rgb)
             line.line.fill.background()
             
-            hbar = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(8.3), Inches(3.0), Inches(3.8), Inches(0.05))
+            hbar = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(8.3) + x_shift, Inches(3.0), Inches(3.8), Inches(0.05))
             hbar.fill.solid()
             hbar.fill.fore_color.rgb = RGBColor(*accent_rgb)
             hbar.line.fill.background()
             
             for i, item in enumerate(items[:3]):
-                x_pos = Inches(7.8) + i * Inches(1.4)
+                x_pos = Inches(7.8) + x_shift + i * Inches(1.4)
                 vline = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, x_pos + Inches(0.57), Inches(3.05), Inches(0.05), Inches(0.35))
                 vline.fill.solid()
                 vline.fill.fore_color.rgb = RGBColor(*accent_rgb)
@@ -197,7 +197,7 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate"):
 
         # 4. Mind Map
         elif diagram_type == "mind_map":
-            center = slide.shapes.add_shape(MSO_SHAPE.OVAL, Inches(9.2), Inches(3.3), Inches(1.8), Inches(1.0))
+            center = slide.shapes.add_shape(MSO_SHAPE.OVAL, Inches(9.2) + x_shift, Inches(3.3), Inches(1.8), Inches(1.0))
             center.fill.solid()
             center.fill.fore_color.rgb = RGBColor(*accent_rgb)
             center.line.fill.background()
@@ -212,12 +212,12 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate"):
             ]
             for i, item in enumerate(items[:3]):
                 x, y = spokes[i]
-                conn = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, (x + Inches(9.2))/2 + Inches(0.45), (y + Inches(3.3))/2 + Inches(0.25), Inches(0.05), Inches(0.4))
+                conn = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, (x + Inches(9.2))/2 + Inches(0.45) + x_shift, (y + Inches(3.3))/2 + Inches(0.25), Inches(0.05), Inches(0.4))
                 conn.fill.solid()
                 conn.fill.fore_color.rgb = RGBColor(*border_rgb)
                 conn.line.fill.background()
                 
-                node = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, x, y, Inches(1.8), Inches(0.9))
+                node = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, x + x_shift, y, Inches(1.8), Inches(0.9))
                 node.fill.solid()
                 node.fill.fore_color.rgb = RGBColor(*accent_light_rgb)
                 node.line.color.rgb = RGBColor(*border_rgb)
@@ -235,7 +235,7 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate"):
 
         # 5. Decision Tree
         elif diagram_type == "decision_tree":
-            cond = slide.shapes.add_shape(MSO_SHAPE.DIAMOND, Inches(9.2), Inches(1.8), Inches(2.0), Inches(1.0))
+            cond = slide.shapes.add_shape(MSO_SHAPE.DIAMOND, Inches(9.2) + x_shift, Inches(1.8), Inches(2.0), Inches(1.0))
             cond.fill.solid()
             cond.fill.fore_color.rgb = RGBColor(*accent_rgb)
             cond.line.fill.background()
@@ -244,7 +244,7 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate"):
             apply_text_styling(p_cond, font_name="Arial", size_pt=10, color_rgb=text_light_rgb, bold=True)
             
             yes_item = next((it for it in items if it.get("category") == "yes"), items[0] if items else {})
-            left_card = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(7.8), Inches(3.6), Inches(1.8), Inches(1.4))
+            left_card = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(7.8) + x_shift, Inches(3.6), Inches(1.8), Inches(1.4))
             left_card.fill.solid()
             left_card.fill.fore_color.rgb = RGBColor(*accent_light_rgb)
             left_card.line.color.rgb = RGBColor(34, 197, 94)
@@ -260,7 +260,7 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate"):
                 apply_text_styling(p_ld, font_name="Arial", size_pt=8, color_rgb=text_dark_rgb)
                 
             no_item = next((it for it in items if it.get("category") == "no"), items[1] if len(items) > 1 else (items[0] if items else {}))
-            right_card = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(10.6), Inches(3.6), Inches(1.8), Inches(1.4))
+            right_card = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(10.6) + x_shift, Inches(3.6), Inches(1.8), Inches(1.4))
             right_card.fill.solid()
             right_card.fill.fore_color.rgb = RGBColor(*accent_light_rgb)
             right_card.line.color.rgb = RGBColor(239, 68, 68)
@@ -284,7 +284,7 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate"):
                 fg_rgb = text_light_rgb if i % 2 == 1 else text_dark_rgb
                 lbl_color = text_light_rgb if i % 2 == 1 else accent_rgb
                 
-                layer = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(8.3), top_offset, Inches(3.8), Inches(0.85))
+                layer = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(8.3) + x_shift, top_offset, Inches(3.8), Inches(0.85))
                 layer.fill.solid()
                 layer.fill.fore_color.rgb = RGBColor(*bg_rgb)
                 layer.line.color.rgb = RGBColor(*border_rgb)
@@ -301,7 +301,7 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate"):
                     
                 top_offset += Inches(0.85)
                 if i < 2:
-                    arrow = slide.shapes.add_shape(MSO_SHAPE.DOWN_ARROW, Inches(10.1), top_offset, Inches(0.2), Inches(0.25))
+                    arrow = slide.shapes.add_shape(MSO_SHAPE.DOWN_ARROW, Inches(10.1) + x_shift, top_offset, Inches(0.2), Inches(0.25))
                     arrow.fill.solid()
                     arrow.fill.fore_color.rgb = RGBColor(*accent_rgb)
                     arrow.line.fill.background()
@@ -311,7 +311,7 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate"):
         # 7. Data Relationship / ERD
         elif diagram_type == "erd" and items:
             item_a = next((it for it in items if it.get("category") == "entity_a"), items[0] if items else {})
-            tbl_a = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(7.8), Inches(2.2), Inches(1.8), Inches(2.4))
+            tbl_a = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(7.8) + x_shift, Inches(2.2), Inches(1.8), Inches(2.4))
             tbl_a.fill.solid()
             tbl_a.fill.fore_color.rgb = RGBColor(255, 255, 255)
             tbl_a.line.color.rgb = RGBColor(*accent_rgb)
@@ -330,7 +330,7 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate"):
                 apply_text_styling(p, font_name="Arial", size_pt=8.5, color_rgb=text_dark_rgb)
                 
             item_b = next((it for it in items if it.get("category") == "entity_b"), items[1] if len(items) > 1 else (items[0] if items else {}))
-            tbl_b = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(10.7), Inches(2.2), Inches(1.8), Inches(2.4))
+            tbl_b = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(10.7) + x_shift, Inches(2.2), Inches(1.8), Inches(2.4))
             tbl_b.fill.solid()
             tbl_b.fill.fore_color.rgb = RGBColor(255, 255, 255)
             tbl_b.line.color.rgb = RGBColor(*accent_rgb)
@@ -348,7 +348,7 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate"):
                 p.text = f"• {field.strip()}"
                 apply_text_styling(p, font_name="Arial", size_pt=8.5, color_rgb=text_dark_rgb)
                 
-            line = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(9.6), Inches(3.4), Inches(1.1), Inches(0.04))
+            line = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(9.6) + x_shift, Inches(3.4), Inches(1.1), Inches(0.04))
             line.fill.solid()
             line.fill.fore_color.rgb = RGBColor(*accent_rgb)
             line.line.fill.background()
@@ -364,7 +364,7 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate"):
             ]
             for i, item in enumerate(items[:4]):
                 x, y = coords[i]
-                card = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, x, y, Inches(2.2), Inches(2.1))
+                card = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, x + x_shift, y, Inches(2.2), Inches(2.1))
                 card.fill.solid()
                 card.fill.fore_color.rgb = RGBColor(*accent_light_rgb)
                 card.line.color.rgb = RGBColor(*border_rgb)
@@ -388,7 +388,7 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate"):
         top_offset = Inches(1.8)
         for i, point in enumerate(content[:4]):
             # Draw Step Rounded Rectangle
-            shape = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(8.3), top_offset, Inches(3.8), Inches(0.8))
+            shape = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(8.3) + x_shift, top_offset, Inches(3.8), Inches(0.8))
             shape.fill.solid()
             shape.fill.fore_color.rgb = RGBColor(*accent_light_rgb)
             shape.line.color.rgb = RGBColor(*border_rgb)
@@ -402,7 +402,7 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate"):
             
             # Draw down connector arrow (unless last)
             if i < len(content[:4]) - 1:
-                arrow = slide.shapes.add_shape(MSO_SHAPE.DOWN_ARROW, Inches(10.1), top_offset, Inches(0.2), Inches(0.3))
+                arrow = slide.shapes.add_shape(MSO_SHAPE.DOWN_ARROW, Inches(10.1) + x_shift, top_offset, Inches(0.2), Inches(0.3))
                 arrow.fill.solid()
                 arrow.fill.fore_color.rgb = RGBColor(*accent_rgb)
                 arrow.line.fill.background()
@@ -412,7 +412,7 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate"):
     # 2. Timeline
     if any(x in text for x in ["timeline", "schedule", "history"]):
         # Draw vertical timeline bar
-        bar = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(8.5), Inches(1.8), Inches(0.1), Inches(4.5))
+        bar = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(8.5) + x_shift, Inches(1.8), Inches(0.1), Inches(4.5))
         bar.fill.solid()
         bar.fill.fore_color.rgb = RGBColor(*accent_rgb)
         bar.line.fill.background()
@@ -420,14 +420,14 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate"):
         top_offset = Inches(1.9)
         for i, point in enumerate(content[:4]):
             # Draw circle dot on line
-            circle = slide.shapes.add_shape(MSO_SHAPE.OVAL, Inches(8.35), top_offset + Inches(0.15), Inches(0.4), Inches(0.4))
+            circle = slide.shapes.add_shape(MSO_SHAPE.OVAL, Inches(8.35) + x_shift, top_offset + Inches(0.15), Inches(0.4), Inches(0.4))
             circle.fill.solid()
             circle.fill.fore_color.rgb = RGBColor(255, 255, 255)
             circle.line.color.rgb = RGBColor(*accent_rgb)
             circle.line.width = Pt(3)
             
             # Draw milestone card details
-            card = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(8.9), top_offset, Inches(3.2), Inches(0.7))
+            card = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(8.9) + x_shift, top_offset, Inches(3.2), Inches(0.7))
             card.fill.solid()
             card.fill.fore_color.rgb = RGBColor(*accent_light_rgb)
             card.line.color.rgb = RGBColor(*border_rgb)
@@ -443,7 +443,7 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate"):
     # 3. Organizational Chart / Hierarchy
     if any(x in text for x in ["organ", "hierarchy", "chart"]):
         # Root Node
-        root = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(9.2), Inches(1.8), Inches(2.0), Inches(0.7))
+        root = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(9.2) + x_shift, Inches(1.8), Inches(2.0), Inches(0.7))
         root.fill.solid()
         root.fill.fore_color.rgb = RGBColor(*accent_rgb)
         root.line.fill.background()
@@ -452,20 +452,20 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate"):
         apply_text_styling(p_root, font_name="Arial", size_pt=11, color_rgb=text_light_rgb, bold=True)
         
         # Vertical line down
-        line = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(10.15), Inches(2.5), Inches(0.05), Inches(0.6))
+        line = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(10.15) + x_shift, Inches(2.5), Inches(0.05), Inches(0.6))
         line.fill.solid()
         line.fill.fore_color.rgb = RGBColor(*accent_rgb)
         line.line.fill.background()
         
         # Horizontal branching line
-        hbar = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(8.3), Inches(3.1), Inches(3.8), Inches(0.05))
+        hbar = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(8.3) + x_shift, Inches(3.1), Inches(3.8), Inches(0.05))
         hbar.fill.solid()
         hbar.fill.fore_color.rgb = RGBColor(*accent_rgb)
         hbar.line.fill.background()
         
         # Branch children boxes
         for i, point in enumerate(content[:3]):
-            x_pos = Inches(7.8) + i * Inches(1.4)
+            x_pos = Inches(7.8) + x_shift + i * Inches(1.4)
             vline = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, x_pos + Inches(0.55), Inches(3.15), Inches(0.05), Inches(0.45))
             vline.fill.solid()
             vline.fill.fore_color.rgb = RGBColor(*accent_rgb)
@@ -485,7 +485,7 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate"):
     # 4. Mind Map
     if any(x in text for x in ["mind", "concept"]):
         # Central hub oval
-        center = slide.shapes.add_shape(MSO_SHAPE.OVAL, Inches(9.2), Inches(3.3), Inches(1.8), Inches(1.0))
+        center = slide.shapes.add_shape(MSO_SHAPE.OVAL, Inches(9.2) + x_shift, Inches(3.3), Inches(1.8), Inches(1.0))
         center.fill.solid()
         center.fill.fore_color.rgb = RGBColor(*accent_rgb)
         center.line.fill.background()
@@ -501,12 +501,12 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate"):
         for i, point in enumerate(content[:3]):
             x, y = spokes[i]
             # Draw line to spoke
-            conn = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, (x + Inches(9.2))/2 + Inches(0.45), (y + Inches(3.3))/2 + Inches(0.25), Inches(0.05), Inches(0.4))
+            conn = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, (x + Inches(9.2))/2 + Inches(0.45) + x_shift, (y + Inches(3.3))/2 + Inches(0.25), Inches(0.05), Inches(0.4))
             conn.fill.solid()
             conn.fill.fore_color.rgb = RGBColor(*border_rgb)
             conn.line.fill.background()
             
-            node = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, x, y, Inches(1.8), Inches(0.8))
+            node = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, x + x_shift, y, Inches(1.8), Inches(0.8))
             node.fill.solid()
             node.fill.fore_color.rgb = RGBColor(*accent_light_rgb)
             node.line.color.rgb = RGBColor(*border_rgb)
@@ -520,7 +520,7 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate"):
     # 5. Decision Tree
     if any(x in text for x in ["decision", "tree", "branch"]):
         # Decision diamond
-        cond = slide.shapes.add_shape(MSO_SHAPE.DIAMOND, Inches(9.2), Inches(1.8), Inches(2.0), Inches(1.0))
+        cond = slide.shapes.add_shape(MSO_SHAPE.DIAMOND, Inches(9.2) + x_shift, Inches(1.8), Inches(2.0), Inches(1.0))
         cond.fill.solid()
         cond.fill.fore_color.rgb = RGBColor(*accent_rgb)
         cond.line.fill.background()
@@ -529,7 +529,7 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate"):
         apply_text_styling(p_cond, font_name="Arial", size_pt=11, color_rgb=text_light_rgb, bold=True)
         
         # YES card (Green border)
-        left_card = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(7.8), Inches(3.8), Inches(1.8), Inches(1.2))
+        left_card = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(7.8) + x_shift, Inches(3.8), Inches(1.8), Inches(1.2))
         left_card.fill.solid()
         left_card.fill.fore_color.rgb = RGBColor(*accent_light_rgb)
         left_card.line.color.rgb = RGBColor(34, 197, 94)
@@ -541,7 +541,7 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate"):
         apply_text_styling(p_l, font_name="Arial", size_pt=9, color_rgb=text_dark_rgb)
         
         # NO card (Red border)
-        right_card = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(10.6), Inches(3.8), Inches(1.8), Inches(1.2))
+        right_card = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(10.6) + x_shift, Inches(3.8), Inches(1.8), Inches(1.2))
         right_card.fill.solid()
         right_card.fill.fore_color.rgb = RGBColor(*accent_light_rgb)
         right_card.line.color.rgb = RGBColor(239, 68, 68)
@@ -563,7 +563,7 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate"):
         
         top_offset = Inches(1.8)
         for i, (label, bg_rgb, fg_rgb) in enumerate(layers):
-            layer = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(8.3), top_offset, Inches(3.8), Inches(0.8))
+            layer = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(8.3) + x_shift, top_offset, Inches(3.8), Inches(0.8))
             layer.fill.solid()
             layer.fill.fore_color.rgb = RGBColor(*bg_rgb)
             layer.line.color.rgb = RGBColor(*border_rgb)
@@ -576,7 +576,7 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate"):
             
             top_offset += Inches(0.8)
             if i < 2:
-                arrow = slide.shapes.add_shape(MSO_SHAPE.DOWN_ARROW, Inches(10.1), top_offset, Inches(0.2), Inches(0.3))
+                arrow = slide.shapes.add_shape(MSO_SHAPE.DOWN_ARROW, Inches(10.1) + x_shift, top_offset, Inches(0.2), Inches(0.3))
                 arrow.fill.solid()
                 arrow.fill.fore_color.rgb = RGBColor(*accent_rgb)
                 arrow.line.fill.background()
@@ -586,7 +586,7 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate"):
     # 7. Data Relationship / ERD
     if any(x in text for x in ["relationship", "database", "data", "erd"]):
         # Entity A
-        tbl_a = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(7.8), Inches(2.2), Inches(1.8), Inches(2.2))
+        tbl_a = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(7.8) + x_shift, Inches(2.2), Inches(1.8), Inches(2.2))
         tbl_a.fill.solid()
         tbl_a.fill.fore_color.rgb = RGBColor(255, 255, 255)
         tbl_a.line.color.rgb = RGBColor(*accent_rgb)
@@ -603,7 +603,7 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate"):
             apply_text_styling(p, font_name="Arial", size_pt=9, color_rgb=text_dark_rgb)
             
         # Entity B
-        tbl_b = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(10.7), Inches(2.2), Inches(1.8), Inches(2.2))
+        tbl_b = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(10.7) + x_shift, Inches(2.2), Inches(1.8), Inches(2.2))
         tbl_b.fill.solid()
         tbl_b.fill.fore_color.rgb = RGBColor(255, 255, 255)
         tbl_b.line.color.rgb = RGBColor(*accent_rgb)
@@ -620,7 +620,7 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate"):
             apply_text_styling(p, font_name="Arial", size_pt=9, color_rgb=text_dark_rgb)
 
         # Connector relation line
-        line = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(9.6), Inches(3.2), Inches(1.1), Inches(0.04))
+        line = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(9.6) + x_shift, Inches(3.2), Inches(1.1), Inches(0.04))
         line.fill.solid()
         line.fill.fore_color.rgb = RGBColor(*accent_rgb)
         line.line.fill.background()
@@ -636,7 +636,7 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate"):
         ]
         for i, point in enumerate(content[:4]):
             x, y = coords[i]
-            card = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, x, y, Inches(2.2), Inches(2.0))
+            card = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, x + x_shift, y, Inches(2.2), Inches(2.0))
             card.fill.solid()
             card.fill.fore_color.rgb = RGBColor(*accent_light_rgb)
             card.line.color.rgb = RGBColor(*border_rgb)
@@ -654,7 +654,7 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate"):
         return
 
     # Default fallback: visual layout suggestion textbox
-    visual_box = slide.shapes.add_textbox(Inches(7.8), Inches(1.8), Inches(4.7), Inches(4.8))
+    visual_box = slide.shapes.add_textbox(Inches(7.8) + x_shift, Inches(1.8), Inches(4.7), Inches(4.8))
     tf_visual = visual_box.text_frame
     tf_visual.word_wrap = True
     
@@ -744,8 +744,12 @@ def main():
             p_title.text = title_text
             apply_text_styling(p_title, font_name="Georgia", size_pt=32, color_rgb=palette["text"], bold=True)
             
-            # Left Column: Content Points
-            content_box = slide.shapes.add_textbox(Inches(0.8), Inches(1.8), Inches(6.5), Inches(4.8))
+            # Determine alternating columns for PPT Designer layout
+            is_even_slide = (idx % 2 == 0)
+            content_left = Inches(6.0) if (is_even_slide and visual_suggestion) else Inches(0.8)
+            
+            # Left/Right Column: Content Points
+            content_box = slide.shapes.add_textbox(content_left, Inches(1.8), Inches(6.5), Inches(4.8))
             tf_content = content_box.text_frame
             tf_content.word_wrap = True
             
@@ -755,9 +759,19 @@ def main():
                 apply_text_styling(p, font_name="Arial", size_pt=16, color_rgb=palette["text"])
                 p.space_after = Pt(14)
                 
-            # Right Column: Draw dynamic diagram if suggestion exists
+            # Right/Left Column: Draw dynamic diagram if suggestion exists
             if visual_suggestion:
-                draw_diagram(slide, visual_suggestion, content_points, slide_data.get("diagram"), theme_name)
+                x_shift = -Inches(7.0) if is_even_slide else Inches(0)
+                
+                # Draw PPT Designer Card Background behind diagram
+                card_left = Inches(7.8) + x_shift
+                card = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, card_left, Inches(1.5), Inches(4.7), Inches(5.1))
+                card.fill.solid()
+                card.fill.fore_color.rgb = RGBColor(*palette["cardBg"])
+                card.line.color.rgb = RGBColor(*palette["border"])
+                card.line.width = Pt(1.5)
+                
+                draw_diagram(slide, visual_suggestion, content_points, slide_data.get("diagram"), theme_name, x_shift)
 
     prs.save(output_path)
     print(f"PowerPoint saved successfully to: {output_path}")
