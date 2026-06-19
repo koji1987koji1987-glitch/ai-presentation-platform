@@ -235,13 +235,13 @@ def generate_slides(text):
     gemini_key = os.environ.get("GEMINI_API_KEY")
     if gemini_key and gemini_key.strip() != "" and "api_key_here" not in gemini_key.lower():
         try:
-            print("GEMINI_API_KEY found. Generating slides using gemini-1.5-flash...", file=sys.stderr)
+            print("GEMINI_API_KEY found. Generating slides using gemini-2.5-flash...", file=sys.stderr)
             from google import genai
             from google.genai import types
             
             client = genai.Client(api_key=gemini_key)
             response = client.models.generate_content(
-                model='gemini-1.5-flash',
+                model='gemini-2.5-flash',
                 contents=prompt,
                 config=types.GenerateContentConfig(
                     response_mime_type="application/json"
