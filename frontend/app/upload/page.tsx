@@ -41,8 +41,15 @@ export default function UploadPage() {
                 throw new Error(errData.error || "Failed to generate presentation");
             }
 
-            const slides = await response.json();
-            localStorage.setItem("slides", JSON.stringify(slides));
+            const responseData = await response.json();
+            if (responseData && typeof responseData === "object" && "slides" in responseData) {
+                localStorage.setItem("slides", JSON.stringify(responseData.slides));
+                if (responseData.theme) {
+                    localStorage.setItem("theme", responseData.theme);
+                }
+            } else {
+                localStorage.setItem("slides", JSON.stringify(responseData));
+            }
             router.push("/presentation");
         } catch (error: any) {
             console.error("Generation failed:", error);

@@ -374,14 +374,28 @@ def rule_based_fallback(text):
             "diagram": diagram
         })
         
-    return slides
+    # Determine the theme based on keywords
+    text_lower = text.lower()
+    selected_theme = "slate"
+    if any(w in text_lower for w in ["green", "eco", "forest", "tree", "plant", "environment", "sustain", "nature", "health", "medical"]):
+        selected_theme = "emerald"
+    elif any(w in text_lower for w in ["cloud", "tech", "code", "cyber", "ai", "network", "system", "security", "dark", "server", "software"]):
+        selected_theme = "dark"
+    elif any(w in text_lower for w in ["ocean", "water", "sea", "river", "creative", "art", "music", "design", "marketing", "sales"]):
+        selected_theme = "indigo"
+        
+    return {
+        "theme": selected_theme,
+        "slides": slides
+    }
 
 def generate_slides(text):
     prompt = (
         "You are a professional presentation generation system.\n"
         "Your task is to analyze the document content below, identify the main themes, and output a structured presentation "
-        "as a JSON object containing a 'slides' key which holds an array of slide objects. "
+        "as a JSON object containing 'theme' and 'slides' keys. "
         "You should generate between 5 and 10 slides that represent a comprehensive and logical flow of the document.\n"
+        "Choose a suitable visual theme matching the document topic. Return one of: 'slate' (general/corporate/clean), 'dark' (technology/developer/modern), 'indigo' (creative/oceanic/professional), or 'emerald' (eco/health/forest/growth).\n"
         "First, analyze the contents and create custom, descriptive titles for each slide based on the specific topics "
         "covered in the document (do not use generic titles like 'Slide 1' or 'Overview').\n"
         "Do not just copy blocks of text. Instead, summarize and recompose the text under these custom slide titles into "
@@ -418,7 +432,7 @@ def generate_slides(text):
         "- Use 'none' if no diagram is suitable.\n\n"
         f"Document Content:\n{text[:12000]}\n\n"
         "Return only valid JSON matching this schema: "
-        '{"slides": [{"title": "Custom Slide Title", "content": ["point 1", "point 2"], "visual_suggestion": "Description...", '
+        '{"theme": "slate", "slides": [{"title": "Custom Slide Title", "content": ["point 1", "point 2"], "visual_suggestion": "Description...", '
         '"diagram": {"type": "flowchart", "data": {"title": "Title", "items": [{"label": "Step 1", "detail": "Init"}]}}}]}'
     )
 
@@ -441,7 +455,9 @@ def generate_slides(text):
             data = json.loads(response.text)
             
             if "slides" in data and isinstance(data["slides"], list) and len(data["slides"]) > 0:
-                return data["slides"]
+                if "theme" not in data or data["theme"] not in ["slate", "dark", "indigo", "emerald"]:
+                    data["theme"] = "slate"
+                return data
                 
             print("Gemini API output did not match expected schema, falling back.", file=sys.stderr)
         except Exception as e:
@@ -467,7 +483,9 @@ def generate_slides(text):
             
             data = json.loads(response.choices[0].message.content)
             if "slides" in data and isinstance(data["slides"], list) and len(data["slides"]) > 0:
-                return data["slides"]
+                if "theme" not in data or data["theme"] not in ["slate", "dark", "indigo", "emerald"]:
+                    data["theme"] = "slate"
+                return data
                 
             print("OpenAI API output did not match expected schema, falling back.", file=sys.stderr)
         except Exception as e:

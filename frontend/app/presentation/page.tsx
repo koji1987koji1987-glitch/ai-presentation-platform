@@ -89,6 +89,10 @@ export default function PresentationPage() {
                 console.error("Failed to parse saved slides:", e);
             }
         }
+        const savedTheme = localStorage.getItem("theme");
+        if (savedTheme && savedTheme in themePalettes) {
+            setActiveTheme(savedTheme as ThemeKey);
+        }
     }, []);
 
     // Slide Array Updates
@@ -270,7 +274,10 @@ export default function PresentationPage() {
                         {(Object.keys(themePalettes) as ThemeKey[]).map((key) => (
                             <button
                                 key={key}
-                                onClick={() => setActiveTheme(key)}
+                                onClick={() => {
+                                    setActiveTheme(key);
+                                    localStorage.setItem("theme", key);
+                                }}
                                 style={{
                                     backgroundColor: activeTheme === key ? themePalettes[key].accent : themePalettes[key].bg,
                                     border: `1px solid ${themePalettes[key].border}`,
