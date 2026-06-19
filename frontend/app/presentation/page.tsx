@@ -67,6 +67,26 @@ const themePalettes = {
         accent: "#059669",
         accentLight: "#d1fae5",
         border: "#a7f3d0"
+    },
+    sakura: {
+        name: "Sakura Peach",
+        bg: "#fff5f5",
+        cardBg: "#ffffff",
+        text: "#4c0519",
+        muted: "#db2777",
+        accent: "#db2777",
+        accentLight: "#fce7f3",
+        border: "#fbcfe8"
+    },
+    cobalt: {
+        name: "Cobalt Tech",
+        bg: "#f0f4f8",
+        cardBg: "#ffffff",
+        text: "#102a43",
+        muted: "#0f62fe",
+        accent: "#0f62fe",
+        accentLight: "#e5f1ff",
+        border: "#d0e2ff"
     }
 };
 
@@ -169,7 +189,7 @@ export default function PresentationPage() {
                 headers: {
                     "Content-Type": "application/json",
                 },
-                body: JSON.stringify({ slides }),
+                body: JSON.stringify({ slides, theme: activeTheme }),
             });
 
             if (!response.ok) {

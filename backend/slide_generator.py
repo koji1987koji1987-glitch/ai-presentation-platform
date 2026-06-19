@@ -377,11 +377,15 @@ def rule_based_fallback(text):
     # Determine the theme based on keywords
     text_lower = text.lower()
     selected_theme = "slate"
-    if any(w in text_lower for w in ["green", "eco", "forest", "tree", "plant", "environment", "sustain", "nature", "health", "medical"]):
+    if any(w in text_lower for w in ["food", "beverage", "restaurant", "cook", "chef", "bakery", "sweet", "peach", "rose", "flower", "fruit", "recipe", "wellness", "spa", "pink"]):
+        selected_theme = "sakura"
+    elif any(w in text_lower for w in ["tech", "database", "network", "system", "logic", "code", "computing", "engineer", "developer", "software", "cyber", "security", "automation", "api", "programming", "server"]):
+        selected_theme = "cobalt"
+    elif any(w in text_lower for w in ["green", "eco", "forest", "tree", "plant", "environment", "sustain", "nature", "agriculture"]):
         selected_theme = "emerald"
-    elif any(w in text_lower for w in ["cloud", "tech", "code", "cyber", "ai", "network", "system", "security", "dark", "server", "software"]):
+    elif any(w in text_lower for w in ["dark", "night", "cyberpunk", "terminal"]):
         selected_theme = "dark"
-    elif any(w in text_lower for w in ["ocean", "water", "sea", "river", "creative", "art", "music", "design", "marketing", "sales"]):
+    elif any(w in text_lower for w in ["ocean", "water", "sea", "river", "creative", "art", "music", "design", "marketing", "sales", "finance"]):
         selected_theme = "indigo"
         
     return {
@@ -395,7 +399,7 @@ def generate_slides(text):
         "Your task is to analyze the document content below, identify the main themes, and output a structured presentation "
         "as a JSON object containing 'theme' and 'slides' keys. "
         "You should generate between 5 and 10 slides that represent a comprehensive and logical flow of the document.\n"
-        "Choose a suitable visual theme matching the document topic. Return one of: 'slate' (general/corporate/clean), 'dark' (technology/developer/modern), 'indigo' (creative/oceanic/professional), or 'emerald' (eco/health/forest/growth).\n"
+        "Choose a suitable visual theme matching the document topic. Return one of: 'slate' (general/corporate/clean), 'dark' (technology/developer/modern), 'indigo' (creative/oceanic/professional), 'emerald' (eco/health/forest/growth), 'sakura' (food/wellness/peach/pink), or 'cobalt' (cool professional/IT/systems/blue).\n"
         "First, analyze the contents and create custom, descriptive titles for each slide based on the specific topics "
         "covered in the document (do not use generic titles like 'Slide 1' or 'Overview').\n"
         "Do not just copy blocks of text. Instead, summarize and recompose the text under these custom slide titles into "
@@ -455,7 +459,7 @@ def generate_slides(text):
             data = json.loads(response.text)
             
             if "slides" in data and isinstance(data["slides"], list) and len(data["slides"]) > 0:
-                if "theme" not in data or data["theme"] not in ["slate", "dark", "indigo", "emerald"]:
+                if "theme" not in data or data["theme"] not in ["slate", "dark", "indigo", "emerald", "sakura", "cobalt"]:
                     data["theme"] = "slate"
                 return data
                 
@@ -483,7 +487,7 @@ def generate_slides(text):
             
             data = json.loads(response.choices[0].message.content)
             if "slides" in data and isinstance(data["slides"], list) and len(data["slides"]) > 0:
-                if "theme" not in data or data["theme"] not in ["slate", "dark", "indigo", "emerald"]:
+                if "theme" not in data or data["theme"] not in ["slate", "dark", "indigo", "emerald", "sakura", "cobalt"]:
                     data["theme"] = "slate"
                 return data
                 

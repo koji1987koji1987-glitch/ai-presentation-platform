@@ -6,6 +6,7 @@ export async function POST(request: Request) {
   try {
     const body = await request.json();
     const slides = body.slides || body;
+    const theme = body.theme || "slate";
 
     if (!Array.isArray(slides) || slides.length === 0) {
       return Response.json(
@@ -28,6 +29,7 @@ export async function POST(request: Request) {
         join(process.cwd(), "..", "backend", "ppt_exporter.py"),
         tempJsonPath,
         tempPptxPath,
+        theme,
       ]);
 
       const fileBuffer = readFileSync(tempPptxPath);

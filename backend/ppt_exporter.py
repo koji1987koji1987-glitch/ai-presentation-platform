@@ -13,18 +13,76 @@ def apply_text_styling(paragraph, font_name="Arial", size_pt=18, color_rgb=(51, 
     paragraph.font.bold = bold
     paragraph.font.italic = italic
 
-def draw_diagram(slide, suggestion, content, diagram=None):
+THEME_PALETTES = {
+    "slate": {
+        "bg": (248, 250, 252),
+        "cardBg": (255, 255, 255),
+        "text": (15, 23, 42),
+        "muted": (100, 116, 139),
+        "accent": (79, 70, 229),
+        "accentLight": (239, 246, 255),
+        "border": (226, 232, 240)
+    },
+    "dark": {
+        "bg": (15, 23, 42),
+        "cardBg": (30, 41, 59),
+        "text": (248, 250, 252),
+        "muted": (148, 163, 184),
+        "accent": (129, 140, 248),
+        "accentLight": (49, 46, 129),
+        "border": (51, 65, 85)
+    },
+    "indigo": {
+        "bg": (238, 242, 255),
+        "cardBg": (255, 255, 255),
+        "text": (30, 27, 75),
+        "muted": (79, 70, 229),
+        "accent": (79, 70, 229),
+        "accentLight": (224, 231, 255),
+        "border": (199, 210, 254)
+    },
+    "emerald": {
+        "bg": (240, 253, 244),
+        "cardBg": (255, 255, 255),
+        "text": (6, 78, 59),
+        "muted": (5, 150, 105),
+        "accent": (5, 150, 105),
+        "accentLight": (209, 250, 229),
+        "border": (167, 243, 208)
+    },
+    "sakura": {
+        "bg": (255, 245, 245),
+        "cardBg": (255, 255, 255),
+        "text": (76, 5, 25),
+        "muted": (219, 39, 119),
+        "accent": (219, 39, 119),
+        "accentLight": (252, 231, 243),
+        "border": (251, 207, 232)
+    },
+    "cobalt": {
+        "bg": (240, 244, 248),
+        "cardBg": (255, 255, 255),
+        "text": (16, 42, 67),
+        "muted": (15, 98, 254),
+        "accent": (15, 98, 254),
+        "accentLight": (229, 241, 255),
+        "border": (208, 226, 255)
+    }
+}
+
+def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate"):
     text = (suggestion or "").lower()
     
     # Helper to truncate text inside shapes
     def trunc(s, max_len=30):
         return s[:max_len] + "..." if len(s) > max_len else s
 
-    accent_rgb = (99, 102, 241)     # Indigo 500
-    accent_light_rgb = (238, 242, 255) # Indigo 50
-    text_dark_rgb = (15, 23, 42)      # Slate 900
-    text_light_rgb = (255, 255, 255)  # White
-    border_rgb = (199, 210, 254)      # Indigo 200
+    palette = THEME_PALETTES.get(theme_name, THEME_PALETTES["slate"])
+    accent_rgb = palette["accent"]
+    accent_light_rgb = palette["accentLight"]
+    text_dark_rgb = palette["text"]
+    text_light_rgb = (255, 255, 255)
+    border_rgb = palette["border"]
 
     # Draw structured diagram if available
     if diagram and isinstance(diagram, dict) and diagram.get("type") and diagram.get("type") != "none":
@@ -632,6 +690,9 @@ def main():
     if isinstance(slides, dict) and "slides" in slides:
         slides = slides["slides"]
 
+    theme_name = sys.argv[3] if len(sys.argv) > 3 else "slate"
+    palette = THEME_PALETTES.get(theme_name, THEME_PALETTES["slate"])
+
     prs = Presentation()
     # Set slide size to widescreen 16:9
     prs.slide_width = Inches(13.333)
@@ -648,11 +709,11 @@ def main():
         visual_suggestion = slide_data.get("visual_suggestion", "")
 
         if idx == 0:
-            # Title Slide: Dark Slate theme (#0F172A)
+            # Title Slide
             background = slide.background
             fill = background.fill
             fill.solid()
-            fill.fore_color.rgb = RGBColor(15, 23, 42)
+            fill.fore_color.rgb = RGBColor(*palette["bg"])
             
             # Text box for title & description
             txBox = slide.shapes.add_textbox(Inches(1.0), Inches(2.2), Inches(11.333), Inches(4.0))
@@ -661,19 +722,19 @@ def main():
             
             p_title = tf.paragraphs[0]
             p_title.text = title_text
-            apply_text_styling(p_title, font_name="Georgia", size_pt=44, color_rgb=(255, 255, 255), bold=True)
+            apply_text_styling(p_title, font_name="Georgia", size_pt=44, color_rgb=palette["text"], bold=True)
             p_title.space_after = Pt(20)
             
             if content_points:
                 p_sub = tf.add_paragraph()
                 p_sub.text = " • ".join(content_points)
-                apply_text_styling(p_sub, font_name="Arial", size_pt=18, color_rgb=(148, 163, 184))
+                apply_text_styling(p_sub, font_name="Arial", size_pt=18, color_rgb=palette["muted"])
         else:
-            # Content Slide: Light slate background (#F8FAFC)
+            # Content Slide
             background = slide.background
             fill = background.fill
             fill.solid()
-            fill.fore_color.rgb = RGBColor(248, 250, 252)
+            fill.fore_color.rgb = RGBColor(*palette["bg"])
             
             # Slide Header Title
             title_box = slide.shapes.add_textbox(Inches(0.8), Inches(0.6), Inches(11.7), Inches(1.0))
@@ -681,7 +742,7 @@ def main():
             tf_title.word_wrap = True
             p_title = tf_title.paragraphs[0]
             p_title.text = title_text
-            apply_text_styling(p_title, font_name="Georgia", size_pt=32, color_rgb=(15, 23, 42), bold=True)
+            apply_text_styling(p_title, font_name="Georgia", size_pt=32, color_rgb=palette["text"], bold=True)
             
             # Left Column: Content Points
             content_box = slide.shapes.add_textbox(Inches(0.8), Inches(1.8), Inches(6.5), Inches(4.8))
@@ -691,12 +752,12 @@ def main():
             for p_idx, point in enumerate(content_points):
                 p = tf_content.add_paragraph() if p_idx > 0 else tf_content.paragraphs[0]
                 p.text = f"•  {point}"
-                apply_text_styling(p, font_name="Arial", size_pt=16, color_rgb=(51, 65, 85))
+                apply_text_styling(p, font_name="Arial", size_pt=16, color_rgb=palette["text"])
                 p.space_after = Pt(14)
                 
             # Right Column: Draw dynamic diagram if suggestion exists
             if visual_suggestion:
-                draw_diagram(slide, visual_suggestion, content_points, slide_data.get("diagram"))
+                draw_diagram(slide, visual_suggestion, content_points, slide_data.get("diagram"), theme_name)
 
     prs.save(output_path)
     print(f"PowerPoint saved successfully to: {output_path}")
