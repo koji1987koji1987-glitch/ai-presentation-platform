@@ -211,54 +211,80 @@ def rule_based_fallback(text):
     return slides
 
 def generate_slides(text):
-    api_key = os.environ.get("OPENAI_API_KEY")
-    if not api_key or api_key.strip() == "" or "api_key_here" in api_key.lower():
-        print("OPENAI_API_KEY not set or placeholder, running rule-based fallback.", file=sys.stderr)
-        return rule_based_fallback(text)
-        
-    try:
-        from openai import OpenAI
-        client = OpenAI(api_key=api_key)
-        
-        prompt = (
-            "You are a professional presentation generation system. "
-            "Your task is to analyze the document content below, identify the main themes, and output a structured presentation "
-            "as a JSON object containing a 'slides' key which holds an array of slide objects. "
-            "You should generate between 5 and 10 slides that represent a comprehensive and logical flow of the document. "
-            "First, analyze the contents and create custom, descriptive titles for each slide based on the specific topics "
-            "covered in the document (do not use generic titles like 'Slide 1' or 'Overview' if you can make them more descriptive, "
-            "e.g., 'Challenges in Cloud Migrations' or 'Q3 Financial Performance').\n"
-            "Do not just copy blocks of text. Instead, summarize and recompose the text under these custom slide titles into "
-            "brief, high-impact bullet points.\n"
-            "Each slide object in the array MUST have the following keys:\n"
-            "- 'title': A custom, descriptive slide title based on your analysis.\n"
-            "- 'content': An array of 3 to 5 concise and meaningful bullet points summarizing the insights for that slide.\n"
-            "- 'visual_suggestion': A clear recommendation for a diagram, flowchart, matrix, chart, or image that "
-            "visually explains this slide's content.\n\n"
-            f"Document Content:\n{text[:12000]}\n\n"
-            "Return only valid JSON matching this schema: "
-            '{"slides": [{"title": "Custom Slide Title", "content": ["point 1", "point 2"], "visual_suggestion": "Description..."}]}'
-        )
-        
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {"role": "system", "content": "You are a helpful assistant that outputs JSON only."},
-                {"role": "user", "content": prompt}
-            ],
-            response_format={"type": "json_object"},
-            temperature=0.7
-        )
-        
-        data = json.loads(response.choices[0].message.content)
-        if "slides" in data and isinstance(data["slides"], list) and len(data["slides"]) > 0:
-            return data["slides"]
+    prompt = (
+        "You are a professional presentation generation system. "
+        "Your task is to analyze the document content below, identify the main themes, and output a structured presentation "
+        "as a JSON object containing a 'slides' key which holds an array of slide objects. "
+        "You should generate between 5 and 10 slides that represent a comprehensive and logical flow of the document. "
+        "First, analyze the contents and create custom, descriptive titles for each slide based on the specific topics "
+        "covered in the document (do not use generic titles like 'Slide 1' or 'Overview' if you can make them more descriptive, "
+        "e.g., 'Challenges in Cloud Migrations' or 'Q3 Financial Performance').\n"
+        "Do not just copy blocks of text. Instead, summarize and recompose the text under these custom slide titles into "
+        "brief, high-impact bullet points.\n"
+        "Each slide object in the array MUST have the following keys:\n"
+        "- 'title': A custom, descriptive slide title based on your analysis.\n"
+        "- 'content': An array of 3 to 5 concise and meaningful bullet points summarizing the insights for that slide.\n"
+        "- 'visual_suggestion': A clear recommendation for a diagram, flowchart, matrix, chart, or image that "
+        "visually explains this slide's content.\n\n"
+        f"Document Content:\n{text[:12000]}\n\n"
+        "Return only valid JSON matching this schema: "
+        '{"slides": [{"title": "Custom Slide Title", "content": ["point 1", "point 2"], "visual_suggestion": "Description..."}]}'
+    )
+
+    # 1. Check for Google Gemini API key
+    gemini_key = os.environ.get("GEMINI_API_KEY")
+    if gemini_key and gemini_key.strip() != "" and "api_key_here" not in gemini_key.lower():
+        try:
+            print("GEMINI_API_KEY found. Generating slides using gemini-1.5-flash...", file=sys.stderr)
+            from google import genai
+            from google.genai import types
             
-        print("API output did not match expected schema, running fallback.", file=sys.stderr)
-        return rule_based_fallback(text)
-    except Exception as e:
-        print(f"OpenAI generation error: {e}", file=sys.stderr)
-        return rule_based_fallback(text)
+            client = genai.Client(api_key=gemini_key)
+            response = client.models.generate_content(
+                model='gemini-1.5-flash',
+                contents=prompt,
+                config=types.GenerateContentConfig(
+                    response_mime_type="application/json"
+                )
+            )
+            data = json.loads(response.text)
+            
+            if "slides" in data and isinstance(data["slides"], list) and len(data["slides"]) > 0:
+                return data["slides"]
+                
+            print("Gemini API output did not match expected schema, falling back.", file=sys.stderr)
+        except Exception as e:
+            print(f"Gemini generation error: {e}", file=sys.stderr)
+
+    # 2. Check for OpenAI API key
+    openai_key = os.environ.get("OPENAI_API_KEY")
+    if openai_key and openai_key.strip() != "" and "api_key_here" not in openai_key.lower():
+        try:
+            print("OPENAI_API_KEY found. Generating slides using gpt-4o-mini...", file=sys.stderr)
+            from openai import OpenAI
+            client = OpenAI(api_key=openai_key)
+            
+            response = client.chat.completions.create(
+                model="gpt-4o-mini",
+                messages=[
+                    {"role": "system", "content": "You are a helpful assistant that outputs JSON only."},
+                    {"role": "user", "content": prompt}
+                ],
+                response_format={"type": "json_object"},
+                temperature=0.7
+            )
+            
+            data = json.loads(response.choices[0].message.content)
+            if "slides" in data and isinstance(data["slides"], list) and len(data["slides"]) > 0:
+                return data["slides"]
+                
+            print("OpenAI API output did not match expected schema, falling back.", file=sys.stderr)
+        except Exception as e:
+            print(f"OpenAI generation error: {e}", file=sys.stderr)
+
+    # 3. Local Rule-Based Fallback
+    print("No valid API keys configured (Gemini or OpenAI). Running rule-based fallback...", file=sys.stderr)
+    return rule_based_fallback(text)
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
