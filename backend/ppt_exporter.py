@@ -13,7 +13,7 @@ def apply_text_styling(paragraph, font_name="Arial", size_pt=18, color_rgb=(51, 
     paragraph.font.bold = bold
     paragraph.font.italic = italic
 
-def draw_diagram(slide, suggestion, content):
+def draw_diagram(slide, suggestion, content, diagram=None):
     text = (suggestion or "").lower()
     
     # Helper to truncate text inside shapes
@@ -26,6 +26,305 @@ def draw_diagram(slide, suggestion, content):
     text_light_rgb = (255, 255, 255)  # White
     border_rgb = (199, 210, 254)      # Indigo 200
 
+    # Draw structured diagram if available
+    if diagram and isinstance(diagram, dict) and diagram.get("type") and diagram.get("type") != "none":
+        diagram_type = diagram["type"]
+        data = diagram.get("data", {})
+        items = data.get("items", [])
+        
+        # 1. Flowchart
+        if diagram_type == "flowchart" and items:
+            top_offset = Inches(1.8)
+            for i, item in enumerate(items[:4]):
+                shape = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(8.3), top_offset, Inches(3.8), Inches(0.9))
+                shape.fill.solid()
+                shape.fill.fore_color.rgb = RGBColor(*accent_light_rgb)
+                shape.line.color.rgb = RGBColor(*border_rgb)
+                tf = shape.text_frame
+                tf.word_wrap = True
+                p = tf.paragraphs[0]
+                p.text = item.get("label", f"Step {i+1}")
+                apply_text_styling(p, font_name="Arial", size_pt=11, color_rgb=accent_rgb, bold=True)
+                
+                if item.get("detail"):
+                    p2 = tf.add_paragraph()
+                    p2.text = trunc(item["detail"], 70)
+                    apply_text_styling(p2, font_name="Arial", size_pt=9, color_rgb=text_dark_rgb)
+                    
+                top_offset += Inches(0.9)
+                
+                if i < len(items[:4]) - 1:
+                    arrow = slide.shapes.add_shape(MSO_SHAPE.DOWN_ARROW, Inches(10.1), top_offset, Inches(0.2), Inches(0.2))
+                    arrow.fill.solid()
+                    arrow.fill.fore_color.rgb = RGBColor(*accent_rgb)
+                    arrow.line.fill.background()
+                    top_offset += Inches(0.2)
+            return
+
+        # 2. Timeline
+        elif diagram_type == "timeline" and items:
+            bar = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(8.5), Inches(1.8), Inches(0.08), Inches(4.3))
+            bar.fill.solid()
+            bar.fill.fore_color.rgb = RGBColor(*accent_rgb)
+            bar.line.fill.background()
+            
+            top_offset = Inches(1.9)
+            for i, item in enumerate(items[:4]):
+                circle = slide.shapes.add_shape(MSO_SHAPE.OVAL, Inches(8.34), top_offset + Inches(0.12), Inches(0.4), Inches(0.4))
+                circle.fill.solid()
+                circle.fill.fore_color.rgb = RGBColor(255, 255, 255)
+                circle.line.color.rgb = RGBColor(*accent_rgb)
+                circle.line.width = Pt(3)
+                
+                card = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(8.9), top_offset, Inches(3.2), Inches(0.85))
+                card.fill.solid()
+                card.fill.fore_color.rgb = RGBColor(*accent_light_rgb)
+                card.line.color.rgb = RGBColor(*border_rgb)
+                tf = card.text_frame
+                tf.word_wrap = True
+                p = tf.paragraphs[0]
+                p.text = item.get("label", f"Phase {i+1}")
+                apply_text_styling(p, font_name="Arial", size_pt=10, color_rgb=accent_rgb, bold=True)
+                
+                if item.get("detail"):
+                    p2 = tf.add_paragraph()
+                    p2.text = trunc(item["detail"], 70)
+                    apply_text_styling(p2, font_name="Arial", size_pt=8.5, color_rgb=text_dark_rgb)
+                    
+                top_offset += Inches(1.1)
+            return
+
+        # 3. Organizational Chart / Hierarchy
+        elif diagram_type == "org_chart":
+            root = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(9.2), Inches(1.8), Inches(2.0), Inches(0.7))
+            root.fill.solid()
+            root.fill.fore_color.rgb = RGBColor(*accent_rgb)
+            root.line.fill.background()
+            p_root = root.text_frame.paragraphs[0]
+            p_root.text = data.get("root", "Root Level")
+            apply_text_styling(p_root, font_name="Arial", size_pt=11, color_rgb=text_light_rgb, bold=True)
+            
+            line = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(10.17), Inches(2.5), Inches(0.05), Inches(0.5))
+            line.fill.solid()
+            line.fill.fore_color.rgb = RGBColor(*accent_rgb)
+            line.line.fill.background()
+            
+            hbar = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(8.3), Inches(3.0), Inches(3.8), Inches(0.05))
+            hbar.fill.solid()
+            hbar.fill.fore_color.rgb = RGBColor(*accent_rgb)
+            hbar.line.fill.background()
+            
+            for i, item in enumerate(items[:3]):
+                x_pos = Inches(7.8) + i * Inches(1.4)
+                vline = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, x_pos + Inches(0.57), Inches(3.05), Inches(0.05), Inches(0.35))
+                vline.fill.solid()
+                vline.fill.fore_color.rgb = RGBColor(*accent_rgb)
+                vline.line.fill.background()
+                
+                card = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, x_pos, Inches(3.4), Inches(1.2), Inches(1.4))
+                card.fill.solid()
+                card.fill.fore_color.rgb = RGBColor(*accent_light_rgb)
+                card.line.color.rgb = RGBColor(*border_rgb)
+                tf = card.text_frame
+                tf.word_wrap = True
+                p = tf.paragraphs[0]
+                p.text = item.get("label", f"Div {i+1}")
+                apply_text_styling(p, font_name="Arial", size_pt=9, color_rgb=accent_rgb, bold=True)
+                
+                if item.get("detail"):
+                    p2 = tf.add_paragraph()
+                    p2.text = trunc(item["detail"], 40)
+                    apply_text_styling(p2, font_name="Arial", size_pt=8, color_rgb=text_dark_rgb)
+            return
+
+        # 4. Mind Map
+        elif diagram_type == "mind_map":
+            center = slide.shapes.add_shape(MSO_SHAPE.OVAL, Inches(9.2), Inches(3.3), Inches(1.8), Inches(1.0))
+            center.fill.solid()
+            center.fill.fore_color.rgb = RGBColor(*accent_rgb)
+            center.line.fill.background()
+            p_c = center.text_frame.paragraphs[0]
+            p_c.text = data.get("root", "Core Focus")
+            apply_text_styling(p_c, font_name="Arial", size_pt=11, color_rgb=text_light_rgb, bold=True)
+            
+            spokes = [
+                (Inches(7.8), Inches(1.8)),
+                (Inches(10.6), Inches(1.8)),
+                (Inches(9.2), Inches(4.8))
+            ]
+            for i, item in enumerate(items[:3]):
+                x, y = spokes[i]
+                conn = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, (x + Inches(9.2))/2 + Inches(0.45), (y + Inches(3.3))/2 + Inches(0.25), Inches(0.05), Inches(0.4))
+                conn.fill.solid()
+                conn.fill.fore_color.rgb = RGBColor(*border_rgb)
+                conn.line.fill.background()
+                
+                node = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, x, y, Inches(1.8), Inches(0.9))
+                node.fill.solid()
+                node.fill.fore_color.rgb = RGBColor(*accent_light_rgb)
+                node.line.color.rgb = RGBColor(*border_rgb)
+                tf = node.text_frame
+                tf.word_wrap = True
+                p = tf.paragraphs[0]
+                p.text = item.get("label", f"Aspect {i+1}")
+                apply_text_styling(p, font_name="Arial", size_pt=9, color_rgb=accent_rgb, bold=True)
+                
+                if item.get("detail"):
+                    p2 = tf.add_paragraph()
+                    p2.text = trunc(item["detail"], 40)
+                    apply_text_styling(p2, font_name="Arial", size_pt=8, color_rgb=text_dark_rgb)
+            return
+
+        # 5. Decision Tree
+        elif diagram_type == "decision_tree":
+            cond = slide.shapes.add_shape(MSO_SHAPE.DIAMOND, Inches(9.2), Inches(1.8), Inches(2.0), Inches(1.0))
+            cond.fill.solid()
+            cond.fill.fore_color.rgb = RGBColor(*accent_rgb)
+            cond.line.fill.background()
+            p_cond = cond.text_frame.paragraphs[0]
+            p_cond.text = data.get("root", "Decision")
+            apply_text_styling(p_cond, font_name="Arial", size_pt=10, color_rgb=text_light_rgb, bold=True)
+            
+            yes_item = next((it for it in items if it.get("category") == "yes"), items[0] if items else {})
+            left_card = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(7.8), Inches(3.6), Inches(1.8), Inches(1.4))
+            left_card.fill.solid()
+            left_card.fill.fore_color.rgb = RGBColor(*accent_light_rgb)
+            left_card.line.color.rgb = RGBColor(34, 197, 94)
+            left_card.line.width = Pt(2)
+            tf_l = left_card.text_frame
+            tf_l.word_wrap = True
+            p_l = tf_l.paragraphs[0]
+            p_l.text = yes_item.get("label", "YES Path")
+            apply_text_styling(p_l, font_name="Arial", size_pt=9, color_rgb=RGBColor(34, 197, 94), bold=True)
+            if yes_item.get("detail"):
+                p_ld = tf_l.add_paragraph()
+                p_ld.text = trunc(yes_item["detail"], 45)
+                apply_text_styling(p_ld, font_name="Arial", size_pt=8, color_rgb=text_dark_rgb)
+                
+            no_item = next((it for it in items if it.get("category") == "no"), items[1] if len(items) > 1 else (items[0] if items else {}))
+            right_card = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(10.6), Inches(3.6), Inches(1.8), Inches(1.4))
+            right_card.fill.solid()
+            right_card.fill.fore_color.rgb = RGBColor(*accent_light_rgb)
+            right_card.line.color.rgb = RGBColor(239, 68, 68)
+            right_card.line.width = Pt(2)
+            tf_r = right_card.text_frame
+            tf_r.word_wrap = True
+            p_r = tf_r.paragraphs[0]
+            p_r.text = no_item.get("label", "NO Path")
+            apply_text_styling(p_r, font_name="Arial", size_pt=9, color_rgb=RGBColor(239, 68, 68), bold=True)
+            if no_item.get("detail"):
+                p_rd = tf_r.add_paragraph()
+                p_rd.text = trunc(no_item["detail"], 45)
+                apply_text_styling(p_rd, font_name="Arial", size_pt=8, color_rgb=text_dark_rgb)
+            return
+
+        # 6. System Architecture
+        elif diagram_type == "architecture" and items:
+            top_offset = Inches(1.8)
+            for i, item in enumerate(items[:3]):
+                bg_rgb = accent_rgb if i % 2 == 1 else accent_light_rgb
+                fg_rgb = text_light_rgb if i % 2 == 1 else text_dark_rgb
+                lbl_color = text_light_rgb if i % 2 == 1 else accent_rgb
+                
+                layer = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(8.3), top_offset, Inches(3.8), Inches(0.85))
+                layer.fill.solid()
+                layer.fill.fore_color.rgb = RGBColor(*bg_rgb)
+                layer.line.color.rgb = RGBColor(*border_rgb)
+                tf = layer.text_frame
+                tf.word_wrap = True
+                p = tf.paragraphs[0]
+                p.text = item.get("label", f"Tier {i+1}")
+                apply_text_styling(p, font_name="Arial", size_pt=10, color_rgb=lbl_color, bold=True)
+                
+                if item.get("detail"):
+                    p2 = tf.add_paragraph()
+                    p2.text = trunc(item["detail"], 60)
+                    apply_text_styling(p2, font_name="Arial", size_pt=8, color_rgb=fg_rgb)
+                    
+                top_offset += Inches(0.85)
+                if i < 2:
+                    arrow = slide.shapes.add_shape(MSO_SHAPE.DOWN_ARROW, Inches(10.1), top_offset, Inches(0.2), Inches(0.25))
+                    arrow.fill.solid()
+                    arrow.fill.fore_color.rgb = RGBColor(*accent_rgb)
+                    arrow.line.fill.background()
+                    top_offset += Inches(0.25)
+            return
+
+        # 7. Data Relationship / ERD
+        elif diagram_type == "erd" and items:
+            item_a = next((it for it in items if it.get("category") == "entity_a"), items[0] if items else {})
+            tbl_a = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(7.8), Inches(2.2), Inches(1.8), Inches(2.4))
+            tbl_a.fill.solid()
+            tbl_a.fill.fore_color.rgb = RGBColor(255, 255, 255)
+            tbl_a.line.color.rgb = RGBColor(*accent_rgb)
+            tbl_a.line.width = Pt(2)
+            tf_a = tbl_a.text_frame
+            tf_a.word_wrap = True
+            p_ah = tf_a.paragraphs[0]
+            p_ah.text = item_a.get("label", "Entity_A")
+            apply_text_styling(p_ah, font_name="Arial", size_pt=10, color_rgb=accent_rgb, bold=True)
+            p_ah.space_after = Pt(6)
+            
+            fields_a = item_a.get("detail", "id (PK)").split(",")
+            for field in fields_a[:5]:
+                p = tf_a.add_paragraph()
+                p.text = f"• {field.strip()}"
+                apply_text_styling(p, font_name="Arial", size_pt=8.5, color_rgb=text_dark_rgb)
+                
+            item_b = next((it for it in items if it.get("category") == "entity_b"), items[1] if len(items) > 1 else (items[0] if items else {}))
+            tbl_b = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(10.7), Inches(2.2), Inches(1.8), Inches(2.4))
+            tbl_b.fill.solid()
+            tbl_b.fill.fore_color.rgb = RGBColor(255, 255, 255)
+            tbl_b.line.color.rgb = RGBColor(*accent_rgb)
+            tbl_b.line.width = Pt(2)
+            tf_b = tbl_b.text_frame
+            tf_b.word_wrap = True
+            p_bh = tf_b.paragraphs[0]
+            p_bh.text = item_b.get("label", "Entity_B")
+            apply_text_styling(p_bh, font_name="Arial", size_pt=10, color_rgb=accent_rgb, bold=True)
+            p_bh.space_after = Pt(6)
+            
+            fields_b = item_b.get("detail", "id (PK)").split(",")
+            for field in fields_b[:5]:
+                p = tf_b.add_paragraph()
+                p.text = f"• {field.strip()}"
+                apply_text_styling(p, font_name="Arial", size_pt=8.5, color_rgb=text_dark_rgb)
+                
+            line = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(9.6), Inches(3.4), Inches(1.1), Inches(0.04))
+            line.fill.solid()
+            line.fill.fore_color.rgb = RGBColor(*accent_rgb)
+            line.line.fill.background()
+            return
+
+        # 8. Comparison Matrix
+        elif diagram_type == "matrix" and items:
+            coords = [
+                (Inches(7.8), Inches(1.8)),
+                (Inches(10.2), Inches(1.8)),
+                (Inches(7.8), Inches(4.1)),
+                (Inches(10.2), Inches(4.1))
+            ]
+            for i, item in enumerate(items[:4]):
+                x, y = coords[i]
+                card = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, x, y, Inches(2.2), Inches(2.1))
+                card.fill.solid()
+                card.fill.fore_color.rgb = RGBColor(*accent_light_rgb)
+                card.line.color.rgb = RGBColor(*border_rgb)
+                tf = card.text_frame
+                tf.word_wrap = True
+                
+                p_h = tf.paragraphs[0]
+                p_h.text = item.get("label", f"Quadrant {i+1}")
+                apply_text_styling(p_h, font_name="Arial", size_pt=10, color_rgb=accent_rgb, bold=True)
+                p_h.space_after = Pt(4)
+                
+                if item.get("detail"):
+                    p_b = tf.add_paragraph()
+                    p_b.text = trunc(item["detail"], 60)
+                    apply_text_styling(p_b, font_name="Arial", size_pt=8.5, color_rgb=text_dark_rgb)
+            return
+
+    # --- Legacy Fallback logic ---
     # 1. Process Flow / Business Workflow
     if any(x in text for x in ["process", "workflow", "flowchart"]):
         top_offset = Inches(1.8)
@@ -397,7 +696,7 @@ def main():
                 
             # Right Column: Draw dynamic diagram if suggestion exists
             if visual_suggestion:
-                draw_diagram(slide, visual_suggestion, content_points)
+                draw_diagram(slide, visual_suggestion, content_points, slide_data.get("diagram"))
 
     prs.save(output_path)
     print(f"PowerPoint saved successfully to: {output_path}")

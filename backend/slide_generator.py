@@ -187,48 +187,239 @@ def rule_based_fallback(text):
         # If too many points, rank and take the top 5
         final_points = rank_sentences(raw_points)[:5]
         
-        # Create visual suggestion based on keywords in title
+        # Create visual suggestion and structured diagram based on keywords in title
         title_lower = title.lower()
+        
+        def extract_label_detail(p):
+            p_clean = p.strip("• ")
+            words = p_clean.split()
+            if len(words) <= 3:
+                return p_clean, p_clean
+            label_words = []
+            curr_len = 0
+            for w in words[:3]:
+                if curr_len + len(w) > 20:
+                    break
+                label_words.append(w)
+                curr_len += len(w) + 1
+            if not label_words:
+                label_words = [words[0]]
+            label = " ".join(label_words).strip(".,;:?!- ")
+            return label, p_clean
+
+        diagram = {"type": "none", "data": {"title": "", "items": []}}
         if any(w in title_lower for w in ["problem", "challenge", "issue", "risk"]):
             visual = f"A risk matrix or frustration icon comparing different {title.split(' ')[-1].lower()} bottlenecks"
+            diagram = {
+                "type": "matrix",
+                "data": {
+                    "title": "Risk / Issue Analysis Matrix",
+                    "items": []
+                }
+            }
+            for i, p in enumerate(final_points[:4]):
+                lbl, dtl = extract_label_detail(p)
+                diagram["data"]["items"].append({
+                    "label": f"Risk {i+1}: {lbl}",
+                    "detail": dtl,
+                    "category": f"q{i+1}"
+                })
         elif any(w in title_lower for w in ["strategy", "roadmap", "plan", "future"]):
             visual = "A horizontal timeline roadmap showing implementation stages"
+            diagram = {
+                "type": "timeline",
+                "data": {
+                    "title": "Strategic Timeline Roadmap",
+                    "items": []
+                }
+            }
+            for i, p in enumerate(final_points[:4]):
+                lbl, dtl = extract_label_detail(p)
+                diagram["data"]["items"].append({
+                    "label": f"Phase {i+1}: {lbl}",
+                    "detail": dtl
+                })
         elif any(w in title_lower for w in ["analysis", "data", "metric", "insight"]):
             visual = "A dashboard visual showcasing analytics data and key performance indicators"
+            diagram = {
+                "type": "matrix",
+                "data": {
+                    "title": "Data Insights Summary",
+                    "items": []
+                }
+            }
+            for i, p in enumerate(final_points[:4]):
+                lbl, dtl = extract_label_detail(p)
+                diagram["data"]["items"].append({
+                    "label": f"Insight {i+1}: {lbl}",
+                    "detail": dtl,
+                    "category": f"q{i+1}"
+                })
         elif any(w in title_lower for w in ["structure", "architecture", "system"]):
             visual = "A layered system architecture diagram showing core components"
+            diagram = {
+                "type": "architecture",
+                "data": {
+                    "title": "System Architecture Overview",
+                    "items": []
+                }
+            }
+            tiers = ["Client UI", "App API Server", "Storage DB"]
+            for i in range(3):
+                p = final_points[i] if i < len(final_points) else final_points[0]
+                lbl, dtl = extract_label_detail(p)
+                diagram["data"]["items"].append({
+                    "label": tiers[i],
+                    "detail": dtl
+                })
         elif any(w in title_lower for w in ["process", "flow", "workflow"]):
             visual = "A step-by-step flowchart diagram mapping operational stages"
+            diagram = {
+                "type": "flowchart",
+                "data": {
+                    "title": "Operational Workflow",
+                    "items": []
+                }
+            }
+            for i, p in enumerate(final_points[:4]):
+                lbl, dtl = extract_label_detail(p)
+                diagram["data"]["items"].append({
+                    "label": f"Step {i+1}: {lbl}",
+                    "detail": dtl
+                })
+        elif any(w in title_lower for w in ["decision", "tree", "branch", "choice", "option"]):
+            visual = "A decision tree diagram mapping yes/no outcomes"
+            diagram = {
+                "type": "decision_tree",
+                "data": {
+                    "title": "Decision Outcomes Mapping",
+                    "root": "Proposed Action",
+                    "items": []
+                }
+            }
+            p_yes = final_points[0]
+            lbl_yes, dtl_yes = extract_label_detail(p_yes)
+            diagram["data"]["items"].append({
+                "label": f"Yes: {lbl_yes}",
+                "detail": dtl_yes,
+                "category": "yes"
+            })
+            p_no = final_points[1] if len(final_points) > 1 else final_points[0]
+            lbl_no, dtl_no = extract_label_detail(p_no)
+            diagram["data"]["items"].append({
+                "label": f"No: {lbl_no}",
+                "detail": dtl_no,
+                "category": "no"
+            })
+        elif any(w in title_lower for w in ["relationship", "database", "data", "erd", "table"]):
+            visual = "An entity-relationship diagram linking related records"
+            diagram = {
+                "type": "erd",
+                "data": {
+                    "title": "Entity Relationship Diagram",
+                    "items": []
+                }
+            }
+            p1 = final_points[0]
+            lbl1, dtl1 = extract_label_detail(p1)
+            diagram["data"]["items"].append({
+                "label": f"Entity {lbl1[:10]}",
+                "detail": "id (PK), name, description",
+                "category": "entity_a"
+            })
+            p2 = final_points[1] if len(final_points) > 1 else final_points[0]
+            lbl2, dtl2 = extract_label_detail(p2)
+            diagram["data"]["items"].append({
+                "label": f"Entity {lbl2[:10]}",
+                "detail": "id (PK), fk_id (FK), status, value",
+                "category": "entity_b"
+            })
+        elif any(w in title_lower for w in ["organ", "hierarchy", "chart", "management", "team"]):
+            visual = "An organizational chart showing division roles"
+            diagram = {
+                "type": "org_chart",
+                "data": {
+                    "title": "Organizational Hierarchy",
+                    "root": "Executive Board",
+                    "items": []
+                }
+            }
+            for i, p in enumerate(final_points[:3]):
+                lbl, dtl = extract_label_detail(p)
+                diagram["data"]["items"].append({
+                    "label": f"Division {i+1}: {lbl}",
+                    "detail": dtl
+                })
         else:
             visual = f"A conceptual mind map centered on {title.split(' ')[0]}"
+            diagram = {
+                "type": "mind_map",
+                "data": {
+                    "title": f"{title.split(' ')[0]} Mind Map",
+                    "root": title.split(' ')[0],
+                    "items": []
+                }
+            }
+            for i, p in enumerate(final_points[:3]):
+                lbl, dtl = extract_label_detail(p)
+                diagram["data"]["items"].append({
+                    "label": lbl,
+                    "detail": dtl
+                })
 
         slides.append({
             "title": title,
             "content": final_points,
-            "visual_suggestion": visual
+            "visual_suggestion": visual,
+            "diagram": diagram
         })
         
     return slides
 
 def generate_slides(text):
     prompt = (
-        "You are a professional presentation generation system. "
+        "You are a professional presentation generation system.\n"
         "Your task is to analyze the document content below, identify the main themes, and output a structured presentation "
         "as a JSON object containing a 'slides' key which holds an array of slide objects. "
-        "You should generate between 5 and 10 slides that represent a comprehensive and logical flow of the document. "
+        "You should generate between 5 and 10 slides that represent a comprehensive and logical flow of the document.\n"
         "First, analyze the contents and create custom, descriptive titles for each slide based on the specific topics "
-        "covered in the document (do not use generic titles like 'Slide 1' or 'Overview' if you can make them more descriptive, "
-        "e.g., 'Challenges in Cloud Migrations' or 'Q3 Financial Performance').\n"
+        "covered in the document (do not use generic titles like 'Slide 1' or 'Overview').\n"
         "Do not just copy blocks of text. Instead, summarize and recompose the text under these custom slide titles into "
-        "brief, high-impact bullet points.\n"
+        "brief, high-impact bullet points.\n\n"
+        "For each slide, you must also provide a structured layout/diagram proposal to visually display slide themes in a diagram.\n"
         "Each slide object in the array MUST have the following keys:\n"
         "- 'title': A custom, descriptive slide title based on your analysis.\n"
         "- 'content': An array of 3 to 5 concise and meaningful bullet points summarizing the insights for that slide.\n"
-        "- 'visual_suggestion': A clear recommendation for a diagram, flowchart, matrix, chart, or image that "
-        "visually explains this slide's content.\n\n"
+        "- 'visual_suggestion': A short description of a diagram, flowchart, matrix, chart, or image that visually explains this slide's content.\n"
+        "- 'diagram': A structured JSON object describing the diagram elements. It MUST conform to this format:\n"
+        "  {\n"
+        "    \"type\": \"flowchart\" | \"timeline\" | \"org_chart\" | \"mind_map\" | \"decision_tree\" | \"architecture\" | \"erd\" | \"matrix\" | \"none\",\n"
+        "    \"data\": {\n"
+        "      \"title\": \"A short title for the diagram\",\n"
+        "      \"root\": \"Optional main central concept/choice/root node label (only for mind_map, decision_tree, org_chart)\",\n"
+        "      \"items\": [\n"
+        "        {\n"
+        "          \"label\": \"A very short high-impact label (1-3 words, e.g., 'Step 1: Init', 'Q2 Milestone', 'Frontend Tier', 'Entity Name')\",\n"
+        "          \"detail\": \"A short description or sentence of what this item represents\",\n"
+        "          \"category\": \"Optional category tag (use 'yes' or 'no' for decision_tree; 'entity_a' or 'entity_b' for erd; 'q1', 'q2', 'q3', 'q4' for matrix)\"\n"
+        "        }\n"
+        "      ]\n"
+        "    }\n"
+        "  }\n\n"
+        "Choose the diagram type that fits the slide contents best. For example:\n"
+        "- Use 'flowchart' for linear step-by-step processes or workflows.\n"
+        "- Use 'timeline' for roadmaps, history, and schedules.\n"
+        "- Use 'org_chart' for administrative structures or hierarchical breakdowns.\n"
+        "- Use 'mind_map' for exploring multiple facets of a single central concept.\n"
+        "- Use 'decision_tree' for logic paths with branching decisions (must have 2 items with 'yes' and 'no' categories).\n"
+        "- Use 'architecture' for technical infrastructure layers (usually 3 items: e.g. Client UI, App Server, Storage DB).\n"
+        "- Use 'erd' for data relationship entity mappings (must have 2 items with 'entity_a' and 'entity_b' categories).\n"
+        "- Use 'matrix' for comparative 2x2 grids, quadrant analyses, tables, or risk mappings (up to 4 items with categories 'q1', 'q2', 'q3', 'q4').\n"
+        "- Use 'none' if no diagram is suitable.\n\n"
         f"Document Content:\n{text[:12000]}\n\n"
         "Return only valid JSON matching this schema: "
-        '{"slides": [{"title": "Custom Slide Title", "content": ["point 1", "point 2"], "visual_suggestion": "Description..."}]}'
+        '{"slides": [{"title": "Custom Slide Title", "content": ["point 1", "point 2"], "visual_suggestion": "Description...", '
+        '"diagram": {"type": "flowchart", "data": {"title": "Title", "items": [{"label": "Step 1", "detail": "Init"}]}}}]}'
     )
 
     # 1. Check for Google Gemini API key

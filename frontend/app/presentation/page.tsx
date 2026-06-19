@@ -3,10 +3,28 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 
+type DiagramItem = {
+    label: string;
+    detail?: string;
+    category?: string;
+};
+
+type DiagramData = {
+    title: string;
+    root?: string;
+    items: DiagramItem[];
+};
+
+type Diagram = {
+    type: "flowchart" | "timeline" | "org_chart" | "mind_map" | "decision_tree" | "architecture" | "erd" | "matrix" | "none";
+    data: DiagramData;
+};
+
 type Slide = {
     title: string;
     content: string[];
     visual_suggestion?: string;
+    diagram?: Diagram;
 };
 
 const themePalettes = {
@@ -448,6 +466,7 @@ export default function PresentationPage() {
                                         suggestion={slide.visual_suggestion || ""}
                                         content={slide.content}
                                         colors={colors}
+                                        diagram={slide.diagram}
                                     />
 
                                     {/* Edit Recommendation Box */}
@@ -498,13 +517,367 @@ export default function PresentationPage() {
 }
 
 // Interactive CSS Diagram Generator Widget
-function DiagramWidget({ suggestion, content, colors }: { suggestion: string; content: string[]; colors: any }) {
+function DiagramWidget({ suggestion, content, colors, diagram }: { suggestion: string; content: string[]; colors: any; diagram?: Diagram }) {
     const text = (suggestion || "").toLowerCase();
 
     // Helper to truncate text for clean layout sizing
     const truncate = (str: string, len: number) => {
         return str.length > len ? str.slice(0, len) + "..." : str;
     };
+
+    // If structured diagram data is provided, render it!
+    if (diagram && diagram.type && diagram.type !== "none" && diagram.data && Array.isArray(diagram.data.items) && diagram.data.items.length > 0) {
+        const { type, data } = diagram;
+
+        // 1. Process Flow / Business Workflow
+        if (type === "flowchart") {
+            return (
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%" }}>
+                    <div style={{ fontSize: "0.8rem", fontWeight: 700, color: colors.accent, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                        🔄 {data.title || "Process Flow / Workflow"}
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "10px 0" }}>
+                        {data.items.map((item, idx) => (
+                            <div key={idx} style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
+                                <div style={{
+                                    backgroundColor: colors.cardBg,
+                                    border: `1.5px solid ${colors.accent}30`,
+                                    borderRadius: "10px",
+                                    padding: "12px 16px",
+                                    fontSize: "0.85rem",
+                                    color: colors.text,
+                                    width: "90%",
+                                    boxShadow: "0 4px 6px -1px rgba(0,0,0,0.05)",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: "4px"
+                                }}>
+                                    <div style={{ fontWeight: 700, color: colors.accent }}>
+                                        {item.label}
+                                    </div>
+                                    {item.detail && (
+                                        <div style={{ color: colors.muted, fontSize: "0.78rem", lineHeight: "1.4" }}>
+                                            {item.detail}
+                                        </div>
+                                    )}
+                                </div>
+                                {idx < data.items.length - 1 && (
+                                    <div style={{ fontSize: "1.2rem", color: colors.accent, padding: "4px 0", fontWeight: "bold" }}>↓</div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        // 2. Timeline
+        if (type === "timeline") {
+            return (
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%" }}>
+                    <div style={{ fontSize: "0.8rem", fontWeight: 700, color: colors.accent, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                        📅 {data.title || "Timeline Roadmap"}
+                    </div>
+                    <div style={{
+                        position: "relative",
+                        paddingLeft: "24px",
+                        borderLeft: `3px solid ${colors.accent}40`,
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "16px",
+                        margin: "10px 0 10px 10px"
+                    }}>
+                        {data.items.map((item, idx) => (
+                            <div key={idx} style={{ position: "relative", display: "flex", flexDirection: "column", gap: "4px" }}>
+                                <div style={{
+                                    position: "absolute",
+                                    left: "-33px",
+                                    top: "3px",
+                                    width: "15px",
+                                    height: "15px",
+                                    borderRadius: "50%",
+                                    backgroundColor: colors.cardBg,
+                                    border: `3px solid ${colors.accent}`,
+                                    boxShadow: "0 2px 4px rgba(0,0,0,0.1)"
+                                }} />
+                                <div style={{ fontWeight: 700, fontSize: "0.85rem", color: colors.accent }}>
+                                    {item.label}
+                                </div>
+                                {item.detail && (
+                                    <div style={{ fontSize: "0.78rem", color: colors.muted, lineHeight: "1.4" }}>
+                                        {item.detail}
+                                    </div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        // 3. Organizational Chart / Hierarchy
+        if (type === "org_chart") {
+            return (
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%", alignItems: "center" }}>
+                    <div style={{ fontSize: "0.8rem", fontWeight: 700, color: colors.accent, textTransform: "uppercase", letterSpacing: "0.05em", alignSelf: "flex-start" }}>
+                        🏢 {data.title || "Organizational Chart"}
+                    </div>
+                    <div style={{
+                        backgroundColor: colors.accent,
+                        color: "#ffffff",
+                        borderRadius: "8px",
+                        padding: "8px 16px",
+                        fontWeight: "bold",
+                        fontSize: "0.85rem",
+                        textAlign: "center",
+                        boxShadow: "0 4px 6px rgba(0,0,0,0.1)",
+                        width: "80%"
+                    }}>
+                        {data.root || "Core Hierarchy"}
+                    </div>
+                    <div style={{ width: "2px", height: "12px", backgroundColor: colors.accent }} />
+                    <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "100%" }}>
+                        {data.items.map((item, idx) => (
+                            <div key={idx} style={{
+                                backgroundColor: colors.cardBg,
+                                border: `1px solid ${colors.border}`,
+                                borderRadius: "8px",
+                                padding: "10px 12px",
+                                fontSize: "0.8rem",
+                                color: colors.text,
+                                boxShadow: "0 2px 4px rgba(0,0,0,0.02)",
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: "2px"
+                            }}>
+                                <span style={{ fontWeight: 700, color: colors.accent }}>{item.label}</span>
+                                {item.detail && <span style={{ color: colors.muted, fontSize: "0.75rem" }}>{item.detail}</span>}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        // 4. Mind Map
+        if (type === "mind_map") {
+            return (
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%" }}>
+                    <div style={{ fontSize: "0.8rem", fontWeight: 700, color: colors.accent, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                        🧠 {data.title || "Concept Mind Map"}
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "12px", position: "relative" }}>
+                        <div style={{
+                            backgroundColor: colors.accent,
+                            color: "#ffffff",
+                            borderRadius: "20px",
+                            padding: "10px 16px",
+                            fontWeight: "bold",
+                            fontSize: "0.85rem",
+                            textAlign: "center",
+                            boxShadow: `0 4px 10px ${colors.accent}30`
+                        }}>
+                            {data.root || "Core Focus"}
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                            {data.items.map((item, idx) => (
+                                <div key={idx} style={{
+                                    backgroundColor: colors.cardBg,
+                                    border: `1.5px solid ${colors.border}`,
+                                    borderRadius: "10px",
+                                    padding: "10px",
+                                    fontSize: "0.8rem",
+                                    color: colors.text,
+                                    boxShadow: "0 2px 4px rgba(0,0,0,0.02)",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: "2px"
+                                }}>
+                                    <span style={{ fontWeight: 700, color: colors.accent }}>{item.label}</span>
+                                    {item.detail && <span style={{ color: colors.muted, fontSize: "0.72rem" }}>{item.detail}</span>}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // 5. Decision Tree
+        if (type === "decision_tree") {
+            return (
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%" }}>
+                    <div style={{ fontSize: "0.8rem", fontWeight: 700, color: colors.accent, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                        🌿 {data.title || "Decision Tree"}
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
+                        <div style={{
+                            backgroundColor: colors.accent,
+                            color: "#ffffff",
+                            borderRadius: "6px",
+                            padding: "8px 14px",
+                            fontSize: "0.8rem",
+                            fontWeight: 700,
+                            textAlign: "center"
+                        }}>
+                            ❓ {data.root || "Decision Choice"}
+                        </div>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "12px", width: "100%" }}>
+                            {data.items.map((item, idx) => {
+                                const isYes = item.category === "yes";
+                                const borderColor = isYes ? "#22c55e" : "#ef4444";
+                                const tagColor = isYes ? "#e8f5e9" : "#ffebee";
+                                const textTagColor = isYes ? "#2e7d32" : "#c62828";
+                                return (
+                                    <div key={idx} style={{
+                                        backgroundColor: colors.cardBg,
+                                        border: `1.5px solid ${borderColor}`,
+                                        borderRadius: "8px",
+                                        padding: "10px",
+                                        fontSize: "0.78rem",
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        gap: "4px"
+                                    }}>
+                                        <span style={{
+                                            backgroundColor: tagColor,
+                                            color: textTagColor,
+                                            padding: "2px 6px",
+                                            borderRadius: "4px",
+                                            fontWeight: "bold",
+                                            fontSize: "0.7rem",
+                                            width: "max-content"
+                                        }}>
+                                            {isYes ? "YES" : "NO"}
+                                        </span>
+                                        <span style={{ fontWeight: 700, color: colors.text }}>{item.label}</span>
+                                        {item.detail && <span style={{ color: colors.muted, fontSize: "0.72rem" }}>{item.detail}</span>}
+                                    </div>
+                                );
+                            })}
+                        </div>
+                    </div>
+                </div>
+            );
+        }
+
+        // 6. System Architecture
+        if (type === "architecture") {
+            return (
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%" }}>
+                    <div style={{ fontSize: "0.8rem", fontWeight: 700, color: colors.accent, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                        ⚙️ {data.title || "System Architecture"}
+                    </div>
+                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "8px" }}>
+                        {data.items.map((item, idx) => (
+                            <div key={idx} style={{ display: "flex", flexDirection: "column", alignItems: "center", width: "100%" }}>
+                                <div style={{
+                                    backgroundColor: idx % 2 === 0 ? colors.accentLight : colors.accent,
+                                    color: idx % 2 === 0 ? colors.text : "#ffffff",
+                                    border: `1.5px solid ${colors.accent}40`,
+                                    borderRadius: "8px",
+                                    padding: "12px 14px",
+                                    fontSize: "0.8rem",
+                                    width: "95%",
+                                    boxShadow: "0 2px 4px rgba(0,0,0,0.03)",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    gap: "2px"
+                                }}>
+                                    <div style={{ fontWeight: 700, display: "flex", alignItems: "center", gap: "6px" }}>
+                                        <span>{item.label}</span>
+                                    </div>
+                                    {item.detail && <div style={{ fontSize: "0.72rem", opacity: 0.9 }}>{item.detail}</div>}
+                                </div>
+                                {idx < data.items.length - 1 && (
+                                    <div style={{ fontSize: "1rem", color: colors.accent, fontWeight: "bold" }}>↓</div>
+                                )}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        // 7. Data Relationship / ERD
+        if (type === "erd") {
+            return (
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%" }}>
+                    <div style={{ fontSize: "0.8rem", fontWeight: 700, color: colors.accent, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                        📊 {data.title || "ERD Model"}
+                    </div>
+                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", gap: "12px", width: "100%" }}>
+                        {data.items.map((item, idx) => (
+                            <div key={idx} style={{
+                                backgroundColor: colors.cardBg,
+                                border: `1.5px solid ${colors.accent}40`,
+                                borderRadius: "8px",
+                                fontSize: "0.75rem",
+                                width: "48%",
+                                boxShadow: "0 2px 5px rgba(0,0,0,0.05)"
+                            }}>
+                                <div style={{
+                                    backgroundColor: colors.accent,
+                                    color: "#ffffff",
+                                    padding: "6px 10px",
+                                    fontWeight: "bold",
+                                    borderTopLeftRadius: "6px",
+                                    borderTopRightRadius: "6px"
+                                }}>
+                                    {item.label}
+                                </div>
+                                <div style={{ padding: "8px", display: "flex", flexDirection: "column", gap: "4px" }}>
+                                    {item.detail ? item.detail.split(",").map((field, fIdx) => (
+                                        <div key={fIdx} style={{ display: "flex", alignItems: "center", gap: "4px", color: colors.text }}>
+                                            <span>•</span>
+                                            <span>{field.trim()}</span>
+                                        </div>
+                                    )) : (
+                                        <>
+                                            <div>🔑 id (PK)</div>
+                                            <div>📝 name</div>
+                                        </>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+
+        // 8. Matrix
+        if (type === "matrix") {
+            return (
+                <div style={{ display: "flex", flexDirection: "column", gap: "12px", width: "100%" }}>
+                    <div style={{ fontSize: "0.8rem", fontWeight: 700, color: colors.accent, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                        📊 {data.title || "Comparison Matrix Grid"}
+                    </div>
+                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "10px" }}>
+                        {data.items.map((item, idx) => (
+                            <div key={idx} style={{
+                                backgroundColor: colors.accentLight,
+                                border: `1.5px solid ${colors.border}`,
+                                borderRadius: "8px",
+                                padding: "10px",
+                                fontSize: "0.78rem",
+                                color: colors.text,
+                                borderLeft: `4px solid ${colors.accent}`,
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: "2px"
+                            }}>
+                                <span style={{ fontWeight: 700, color: colors.accent }}>{item.label}</span>
+                                {item.detail && <span style={{ color: colors.muted, fontSize: "0.72rem", lineHeight: "1.3" }}>{item.detail}</span>}
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            );
+        }
+    }
+
+    // --- Legacy String parsing / Fallback behaviour ---
 
     // 1. Process Flow / Business Workflow
     if (text.includes("process") || text.includes("workflow") || text.includes("flowchart")) {
