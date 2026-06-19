@@ -487,27 +487,29 @@ export default function PresentationPage() {
                                     </button>
                                 </div>
 
-                                {/* Slide Visual / Diagram Preview (PPT Designer card-wrap) */}
-                                {slide.visual_suggestion && (
-                                    <div style={{ 
-                                        display: "flex", 
-                                        flexDirection: "column", 
-                                        gap: "16px",
-                                        order: index % 2 === 0 ? 1 : 2,
-                                        backgroundColor: colors.cardBg,
-                                        border: `1.5px solid ${colors.border}`,
-                                        borderRadius: "16px",
-                                        padding: "24px",
-                                        boxShadow: "0 10px 15px -3px rgba(0,0,0,0.02), 0 4px 6px -2px rgba(0,0,0,0.01)"
-                                    }}>
-                                        <DiagramWidget
-                                            suggestion={slide.visual_suggestion || ""}
-                                            content={slide.content}
-                                            colors={colors}
-                                            diagram={slide.diagram}
-                                        />
-                                    </div>
-                                )}
+                                {/* Slide Visual / Diagram Preview */}
+                                <div style={{ 
+                                    display: "flex", 
+                                    flexDirection: "column", 
+                                    gap: "16px",
+                                    order: index % 2 === 0 ? 1 : 2
+                                }}>
+                                    {slide.visual_suggestion && (
+                                        <div style={{
+                                            backgroundColor: colors.cardBg,
+                                            border: `1.5px solid ${colors.border}`,
+                                            borderRadius: "16px",
+                                            padding: "24px",
+                                            boxShadow: "0 10px 15px -3px rgba(0,0,0,0.02), 0 4px 6px -2px rgba(0,0,0,0.01)"
+                                        }}>
+                                            <DiagramWidget
+                                                suggestion={slide.visual_suggestion || ""}
+                                                content={slide.content}
+                                                colors={colors}
+                                                diagram={slide.diagram}
+                                            />
+                                        </div>
+                                    )}
 
                                     {/* Edit Recommendation Box */}
                                     <div className="no-print" style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
