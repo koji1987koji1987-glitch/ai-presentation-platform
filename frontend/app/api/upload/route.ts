@@ -40,26 +40,26 @@ export async function POST(request: Request) {
           unlinkSync(tempPath);
         } catch {}
       }
-    } else if (prompt && prompt.trim().length > 0) {
-      text = prompt;
-    } else {
+    }
+
+    const promptText = prompt ? prompt.trim() : "";
+
+    if (!text && !promptText) {
       return Response.json(
         { error: "No file uploaded or prompt text provided" },
         { status: 400 }
       );
     }
 
-    if (!text || text.trim().length === 0) {
-      return Response.json(
-        { error: "Could not extract readable text content." },
-        { status: 422 }
-      );
-    }
+    const payload = JSON.stringify({
+      text: text,
+      prompt: promptText || null
+    });
 
-    // Generate slides from extracted text or prompt
+    // Generate slides from payload
     const slidesOutput = execFileSync("python3", [
       join(process.cwd(), "..", "backend", "slide_generator.py"),
-      text,
+      payload,
     ]).toString();
 
     const slides = JSON.parse(slidesOutput);

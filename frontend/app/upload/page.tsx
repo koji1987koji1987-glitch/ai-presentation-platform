@@ -26,9 +26,12 @@ export default function UploadPage() {
             if (file) {
                 formData.append("file", file);
                 localStorage.setItem("uploadedFile", file.name);
-            } else {
+            }
+            if (promptText.trim()) {
                 formData.append("prompt", promptText);
-                localStorage.setItem("uploadedFile", "Prompt Outline.pdf");
+                if (!file) {
+                    localStorage.setItem("uploadedFile", "Prompt Outline.pdf");
+                }
             }
 
             const response = await fetch("/api/upload", {
@@ -146,7 +149,6 @@ export default function UploadPage() {
                                 if (selectedFile) {
                                     setFile(selectedFile);
                                     setFileName(selectedFile.name);
-                                    setPromptText("");
                                     setErrorMsg("");
                                 }
                             }}
@@ -162,7 +164,33 @@ export default function UploadPage() {
                         />
                         <span style={{ fontSize: "2rem" }}>📄</span>
                         <p style={{ margin: "10px 0 0 0", fontSize: "0.9rem", color: "#cbd5e1", fontWeight: 500 }}>
-                            {fileName ? fileName : "Click to select PDF or DOCX"}
+                            {fileName ? (
+                                <span style={{ display: "inline-flex", alignItems: "center", gap: "8px" }}>
+                                    {fileName}
+                                    <button
+                                        type="button"
+                                        onClick={(e) => {
+                                            e.preventDefault();
+                                            e.stopPropagation();
+                                            setFile(null);
+                                            setFileName("");
+                                        }}
+                                        style={{
+                                            background: "none",
+                                            border: "none",
+                                            color: "#ef4444",
+                                            cursor: "pointer",
+                                            fontWeight: "bold",
+                                            fontSize: "1.2rem",
+                                            lineHeight: 1,
+                                            padding: "0 4px"
+                                        }}
+                                        title="Clear file"
+                                    >
+                                        ×
+                                    </button>
+                                </span>
+                            ) : "Click to select PDF or DOCX"}
                         </p>
                         <p style={{ margin: "4px 0 0 0", fontSize: "0.8rem", color: "#64748b" }}>
                             Max file size 20MB
@@ -193,12 +221,10 @@ export default function UploadPage() {
 
                     <textarea
                         rows={5}
-                        placeholder="e.g. Generate a presentation about Q3 Product Roadmap focusing on Cloud Integrations..."
+                        placeholder="e.g. Focus on pricing, outline core details, or guide the presentation layout..."
                         value={promptText}
                         onChange={(e) => {
                             setPromptText(e.target.value);
-                            setFile(null);
-                            setFileName("");
                             setErrorMsg("");
                         }}
                         style={{

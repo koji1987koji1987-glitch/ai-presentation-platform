@@ -96,6 +96,7 @@ export default function PresentationPage() {
     const [slides, setSlides] = useState<Slide[]>([]);
     const [isExporting, setIsExporting] = useState(false);
     const [activeTheme, setActiveTheme] = useState<ThemeKey>("slate");
+    const [activeSlideIndex, setActiveSlideIndex] = useState(0);
 
     const router = useRouter();
     const colors = themePalettes[activeTheme];
@@ -227,7 +228,7 @@ export default function PresentationPage() {
 
     return (
         <div style={{
-            maxWidth: "1100px",
+            maxWidth: "1300px",
             margin: "0 auto",
             padding: "40px 20px",
             fontFamily: "'Inter', system-ui, -apple-system, sans-serif",
@@ -271,20 +272,28 @@ export default function PresentationPage() {
                 justifyContent: "space-between",
                 alignItems: "center",
                 marginBottom: "40px",
-                borderBottom: `1px solid ${colors.border}`,
-                paddingBottom: "20px"
+                border: `1px solid ${colors.border}`,
+                borderRadius: "16px",
+                padding: "16px 24px",
+                backgroundColor: activeTheme === "dark" ? "rgba(30, 41, 59, 0.4)" : "rgba(255, 255, 255, 0.4)",
+                backdropFilter: "blur(12px)",
+                position: "sticky",
+                top: "20px",
+                zIndex: 100,
+                boxShadow: "0 10px 15px -3px rgba(0,0,0,0.05)"
             }}>
                 <div>
                     <h1 style={{
-                        fontSize: "2.25rem",
+                        fontSize: "1.8rem",
                         fontWeight: 800,
                         color: colors.text,
-                        letterSpacing: "-0.025em"
+                        letterSpacing: "-0.025em",
+                        margin: 0
                     }}>
                         Presentation Editor
                     </h1>
-                    <p style={{ color: colors.muted, marginTop: "4px" }}>
-                        Edit titles, points, layouts and export to PPTX or print-ready PDF.
+                    <p style={{ color: colors.muted, fontSize: "0.85rem", margin: "2px 0 0 0" }}>
+                        Edit slides, adjust diagrams, and download as PowerPoint or PDF.
                     </p>
                 </div>
 
@@ -299,13 +308,14 @@ export default function PresentationPage() {
                                     localStorage.setItem("theme", key);
                                 }}
                                 style={{
-                                    backgroundColor: activeTheme === key ? themePalettes[key].accent : themePalettes[key].bg,
-                                    border: `1px solid ${themePalettes[key].border}`,
-                                    width: "28px",
-                                    height: "28px",
+                                    backgroundColor: themePalettes[key].accent,
+                                    border: activeTheme === key ? `2px solid ${colors.text}` : `1px solid ${themePalettes[key].border}`,
+                                    width: "24px",
+                                    height: "24px",
                                     borderRadius: "9999px",
                                     cursor: "pointer",
-                                    transition: "all 0.2s ease"
+                                    transition: "all 0.2s ease",
+                                    transform: activeTheme === key ? "scale(1.15)" : "scale(1)"
                                 }}
                                 title={themePalettes[key].name}
                             />
@@ -318,14 +328,15 @@ export default function PresentationPage() {
                             backgroundColor: colors.cardBg,
                             border: `1px solid ${colors.border}`,
                             color: colors.text,
-                            padding: "10px 18px",
-                            fontSize: "0.95rem",
+                            padding: "8px 16px",
+                            fontSize: "0.9rem",
                             fontWeight: 600,
                             borderRadius: "8px",
-                            cursor: "pointer"
+                            cursor: "pointer",
+                            transition: "all 0.2s ease"
                         }}
                     >
-                        🖨️ Print to PDF
+                        🖨️ Print PDF
                     </button>
 
                     {slides.length > 0 && (
@@ -335,16 +346,17 @@ export default function PresentationPage() {
                             style={{
                                 backgroundColor: isExporting ? "#cbd5e1" : colors.accent,
                                 color: "#ffffff",
-                                padding: "10px 18px",
-                                fontSize: "0.95rem",
+                                padding: "8px 16px",
+                                fontSize: "0.9rem",
                                 fontWeight: 600,
                                 borderRadius: "8px",
                                 border: "none",
                                 cursor: isExporting ? "not-allowed" : "pointer",
-                                boxShadow: `0 4px 6px -1px ${colors.accent}30`
+                                boxShadow: `0 4px 6px -1px ${colors.accent}30`,
+                                transition: "all 0.2s ease"
                             }}
                         >
-                            {isExporting ? "Exporting..." : "💾 Export PowerPoint"}
+                            {isExporting ? "Exporting..." : "💾 PowerPoint"}
                         </button>
                     )}
                 </div>
@@ -363,195 +375,389 @@ export default function PresentationPage() {
                     </p>
                 </div>
             ) : (
-                <div style={{ display: "flex", flexDirection: "column", gap: "30px" }}>
-                    {slides.map((slide, index) => (
-                        <div
-                            key={index}
-                            className="slide-card"
+                <div style={{
+                    display: "grid",
+                    gridTemplateColumns: "300px 1fr",
+                    gap: "40px",
+                    alignItems: "start"
+                }}>
+                    {/* Left Column: Slide Outline Sidebar (Gamma.app style) */}
+                    <div className="no-print" style={{
+                        position: "sticky",
+                        top: "110px",
+                        maxHeight: "calc(100vh - 150px)",
+                        overflowY: "auto",
+                        backgroundColor: colors.cardBg,
+                        borderRadius: "16px",
+                        border: `1px solid ${colors.border}`,
+                        padding: "20px",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "16px",
+                        boxShadow: "0 10px 15px -3px rgba(0,0,0,0.02)"
+                    }}>
+                        <div style={{
+                            fontSize: "0.8rem",
+                            fontWeight: 700,
+                            color: colors.muted,
+                            textTransform: "uppercase",
+                            letterSpacing: "0.05em",
+                            borderBottom: `1px solid ${colors.border}`,
+                            paddingBottom: "8px"
+                        }}>
+                            Outline ({slides.length} Slides)
+                        </div>
+
+                        <div style={{
+                            display: "flex",
+                            flexDirection: "column",
+                            gap: "8px",
+                            overflowY: "auto",
+                            maxHeight: "calc(100vh - 280px)",
+                            paddingRight: "4px"
+                        }}>
+                            {slides.map((slide, idx) => (
+                                <div
+                                    key={idx}
+                                    onClick={() => {
+                                        setActiveSlideIndex(idx);
+                                        document.getElementById(`slide-card-${idx}`)?.scrollIntoView({ behavior: "smooth", block: "center" });
+                                    }}
+                                    style={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "space-between",
+                                        padding: "10px 12px",
+                                        borderRadius: "10px",
+                                        border: `1.5px solid ${activeSlideIndex === idx ? colors.accent : "transparent"}`,
+                                        backgroundColor: activeSlideIndex === idx ? colors.accentLight : "transparent",
+                                        cursor: "pointer",
+                                        transition: "all 0.2s ease"
+                                    }}
+                                    className="outline-item"
+                                >
+                                    <div style={{ display: "flex", alignItems: "center", gap: "8px", width: "70%" }}>
+                                        <span style={{ fontSize: "0.8rem", fontWeight: 700, color: activeSlideIndex === idx ? colors.accent : colors.muted }}>
+                                            {String(idx + 1).padStart(2, "0")}
+                                        </span>
+                                        <span style={{
+                                            fontSize: "0.85rem",
+                                            fontWeight: 600,
+                                            color: colors.text,
+                                            whiteSpace: "nowrap",
+                                            overflow: "hidden",
+                                            textOverflow: "ellipsis"
+                                        }}>
+                                            {slide.title || `Untitled Slide`}
+                                        </span>
+                                    </div>
+
+                                    {/* Sidebar outline actions */}
+                                    <div style={{ display: "flex", gap: "2px" }}>
+                                        <button
+                                            disabled={idx === 0}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleMoveSlide(idx, idx - 1);
+                                                setActiveSlideIndex(idx - 1);
+                                            }}
+                                            style={{
+                                                border: "none",
+                                                background: "none",
+                                                color: idx === 0 ? "rgba(0,0,0,0.15)" : colors.muted,
+                                                cursor: idx === 0 ? "not-allowed" : "pointer",
+                                                padding: "2px",
+                                                fontSize: "0.75rem"
+                                            }}
+                                            title="Move Up"
+                                        >
+                                            ▲
+                                        </button>
+                                        <button
+                                            disabled={idx === slides.length - 1}
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleMoveSlide(idx, idx + 1);
+                                                setActiveSlideIndex(idx + 1);
+                                            }}
+                                            style={{
+                                                border: "none",
+                                                background: "none",
+                                                color: idx === slides.length - 1 ? "rgba(0,0,0,0.15)" : colors.muted,
+                                                cursor: idx === slides.length - 1 ? "not-allowed" : "pointer",
+                                                padding: "2px",
+                                                fontSize: "0.75rem"
+                                            }}
+                                            title="Move Down"
+                                        >
+                                            ▼
+                                        </button>
+                                        <button
+                                            onClick={(e) => {
+                                                e.stopPropagation();
+                                                handleDeleteSlide(idx);
+                                            }}
+                                            style={{
+                                                border: "none",
+                                                background: "none",
+                                                color: "#ef4444",
+                                                cursor: "pointer",
+                                                padding: "2px",
+                                                fontSize: "0.75rem"
+                                            }}
+                                            title="Delete Slide"
+                                        >
+                                            🗑️
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+
+                        <button
+                            onClick={handleAddSlide}
                             style={{
-                                backgroundColor: colors.cardBg,
-                                border: `1px solid ${colors.border}`,
-                                borderRadius: "16px",
-                                boxShadow: "0 4px 6px -1px rgba(0,0,0,0.02)",
-                                padding: "32px",
+                                backgroundColor: colors.accentLight,
+                                border: `1px dashed ${colors.accent}`,
+                                color: colors.accent,
+                                padding: "10px",
+                                borderRadius: "10px",
+                                fontSize: "0.85rem",
+                                fontWeight: 700,
+                                cursor: "pointer",
+                                width: "100%",
                                 display: "flex",
-                                flexDirection: "column",
-                                gap: "24px",
-                                transition: "all 0.3s ease"
+                                alignItems: "center",
+                                justifyContent: "center",
+                                gap: "6px",
+                                transition: "all 0.2s ease"
                             }}
                         >
-                            {/* Slide Header Toolbar */}
-                            <div style={{
-                                display: "flex",
-                                justifyContent: "space-between",
-                                alignItems: "center",
-                                borderBottom: `1px solid ${colors.border}`,
-                                paddingBottom: "16px"
-                            }}>
-                                <input
-                                    type="text"
-                                    value={slide.title}
-                                    onChange={(e) => handleUpdateTitle(index, e.target.value)}
-                                    style={{
-                                        fontSize: "1.75rem",
-                                        fontWeight: 800,
-                                        color: colors.text,
-                                        backgroundColor: "transparent",
-                                        border: "1px solid transparent",
-                                        borderRadius: "6px",
-                                        width: "70%",
-                                        padding: "4px 8px"
-                                    }}
-                                />
+                            ➕ Add Blank Slide
+                        </button>
+                    </div>
 
-                                <div className="no-print" style={{ display: "flex", gap: "8px" }}>
-                                    <button
-                                        disabled={index === 0}
-                                        onClick={() => handleMoveSlide(index, index - 1)}
-                                        style={{ padding: "4px 8px", cursor: index === 0 ? "not-allowed" : "pointer" }}
-                                    >
-                                        ▲
-                                    </button>
-                                    <button
-                                        disabled={index === slides.length - 1}
-                                        onClick={() => handleMoveSlide(index, index + 1)}
-                                        style={{ padding: "4px 8px", cursor: index === slides.length - 1 ? "not-allowed" : "pointer" }}
-                                    >
-                                        ▼
-                                    </button>
-                                    <button
-                                        onClick={() => handleDeleteSlide(index)}
-                                        style={{ padding: "4px 8px", color: "#ef4444", cursor: "pointer" }}
-                                    >
-                                        🗑️ Delete
-                                    </button>
-                                </div>
-                            </div>
-
-                            <div style={{
-                                display: "grid",
-                                gridTemplateColumns: slide.visual_suggestion ? "1.2fr 1fr" : "1fr",
-                                gap: "32px",
-                                alignItems: "start"
-                            }}>
-                                {/* Slide Bullet Points */}
-                                <div style={{ order: (slide.visual_suggestion && index % 2 === 0) ? 2 : 1 }}>
-                                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                                        {slide.content.map((point, i) => (
-                                            <div key={i} style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                                                <span style={{ color: colors.accent, fontWeight: "bold" }}>•</span>
-                                                <input
-                                                    type="text"
-                                                    value={point}
-                                                    onChange={(e) => handleUpdateBullet(index, i, e.target.value)}
-                                                    style={{
-                                                        fontSize: "1.05rem",
-                                                        color: colors.text,
-                                                        backgroundColor: "transparent",
-                                                        border: "1px solid transparent",
-                                                        borderRadius: "4px",
-                                                        flexGrow: 1,
-                                                        padding: "4px"
-                                                    }}
-                                                />
-                                                <button
-                                                    className="no-print"
-                                                    onClick={() => handleDeleteBullet(index, i)}
-                                                    style={{
-                                                        color: "#ef4444",
-                                                        backgroundColor: "transparent",
-                                                        border: "none",
-                                                        cursor: "pointer",
-                                                        padding: "0 4px"
-                                                    }}
-                                                >
-                                                    ×
-                                                </button>
-                                            </div>
-                                        ))}
-                                    </div>
-                                    <button
-                                        className="no-print"
-                                        onClick={() => handleAddBullet(index)}
-                                        style={{
-                                            color: colors.accent,
-                                            backgroundColor: "transparent",
-                                            border: "none",
-                                            fontWeight: 600,
-                                            fontSize: "0.9rem",
-                                            cursor: "pointer",
-                                            marginTop: "16px"
-                                        }}
-                                    >
-                                        ➕ Add key point
-                                    </button>
-                                </div>
-
-                                {/* Slide Visual / Diagram Preview */}
-                                <div style={{ 
-                                    display: "flex", 
-                                    flexDirection: "column", 
-                                    gap: "16px",
-                                    order: index % 2 === 0 ? 1 : 2
+                    {/* Right Column: Main Slide Content */}
+                    <div style={{ display: "flex", flexDirection: "column", gap: "40px", width: "100%" }}>
+                        {slides.map((slide, index) => (
+                            <div
+                                key={index}
+                                id={`slide-card-${index}`}
+                                className="slide-card"
+                                onClick={() => setActiveSlideIndex(index)}
+                                style={{
+                                    backgroundColor: colors.cardBg,
+                                    border: `1.5px solid ${activeSlideIndex === index ? colors.accent : colors.border}`,
+                                    borderRadius: "24px",
+                                    boxShadow: activeSlideIndex === index
+                                        ? `0 20px 25px -5px rgba(0, 0, 0, 0.04), 0 0 0 1.5px ${colors.accent}`
+                                        : "0 4px 6px -1px rgba(0, 0, 0, 0.02)",
+                                    padding: "48px",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    justifyContent: "space-between",
+                                    aspectRatio: "16/9",
+                                    minHeight: "560px",
+                                    boxSizing: "border-box",
+                                    transition: "all 0.3s ease",
+                                    position: "relative"
+                                }}
+                            >
+                                {/* Slide Header (Stylized number + title input) */}
+                                <div style={{
+                                    display: "flex",
+                                    justifyContent: "space-between",
+                                    alignItems: "center",
+                                    borderBottom: `1px solid ${colors.border}80`,
+                                    paddingBottom: "16px"
                                 }}>
-                                    {slide.visual_suggestion && (
-                                        <div style={{
-                                            backgroundColor: colors.cardBg,
-                                            border: `1.5px solid ${colors.border}`,
-                                            borderRadius: "16px",
-                                            padding: "24px",
-                                            boxShadow: "0 10px 15px -3px rgba(0,0,0,0.02), 0 4px 6px -2px rgba(0,0,0,0.01)"
+                                    <div style={{ display: "flex", alignItems: "center", gap: "16px", width: "100%" }}>
+                                        <span style={{
+                                            fontSize: "1.4rem",
+                                            fontWeight: 800,
+                                            color: colors.accent,
+                                            fontFamily: "monospace",
+                                            opacity: 0.8
                                         }}>
-                                            <DiagramWidget
-                                                suggestion={slide.visual_suggestion || ""}
-                                                content={slide.content}
-                                                colors={colors}
-                                                diagram={slide.diagram}
-                                            />
-                                        </div>
-                                    )}
-
-                                    {/* Edit Recommendation Box */}
-                                    <div className="no-print" style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                                        <label style={{ fontSize: "0.8rem", fontWeight: 700, color: colors.muted }}>
-                                            Visual Suggestion Text:
-                                        </label>
-                                        <textarea
-                                            value={slide.visual_suggestion || ""}
-                                            onChange={(e) => handleUpdateVisual(index, e.target.value)}
+                                            {String(index + 1).padStart(2, "0")}
+                                        </span>
+                                        <input
+                                            type="text"
+                                            value={slide.title}
+                                            onChange={(e) => handleUpdateTitle(index, e.target.value)}
                                             style={{
-                                                fontSize: "0.85rem",
+                                                fontSize: "1.8rem",
+                                                fontWeight: 800,
                                                 color: colors.text,
-                                                backgroundColor: colors.bg,
-                                                border: `1px solid ${colors.border}`,
+                                                backgroundColor: "transparent",
+                                                border: "1px solid transparent",
                                                 borderRadius: "6px",
-                                                padding: "8px",
-                                                resize: "vertical"
+                                                width: "80%",
+                                                padding: "4px 8px",
+                                                fontFamily: "Georgia, serif"
                                             }}
                                         />
                                     </div>
+
+                                    {/* Action items on card */}
+                                    <div className="no-print" style={{ display: "flex", gap: "8px" }}>
+                                        <button
+                                            onClick={() => handleDeleteSlide(index)}
+                                            style={{
+                                                background: "none",
+                                                border: "none",
+                                                color: "#ef4444",
+                                                cursor: "pointer",
+                                                fontSize: "0.85rem",
+                                                fontWeight: 600,
+                                                opacity: 0.6
+                                            }}
+                                            className="hover:opacity-100"
+                                        >
+                                            Delete
+                                        </button>
+                                    </div>
+                                </div>
+
+                                <div style={{
+                                    display: "grid",
+                                    gridTemplateColumns: slide.visual_suggestion ? "1.2fr 1fr" : "1fr",
+                                    gap: "36px",
+                                    alignItems: "center",
+                                    flexGrow: 1,
+                                    marginTop: "24px"
+                                }}>
+                                    {/* Slide Bullet Points */}
+                                    <div style={{ order: (slide.visual_suggestion && index % 2 === 0) ? 2 : 1 }}>
+                                        <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
+                                            {slide.content.map((point, i) => (
+                                                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
+                                                    <span style={{ color: colors.accent, fontWeight: "bold", marginTop: "4px", fontSize: "1.2rem" }}>•</span>
+                                                    <input
+                                                        type="text"
+                                                        value={point}
+                                                        onChange={(e) => handleUpdateBullet(index, i, e.target.value)}
+                                                        style={{
+                                                            fontSize: "1.05rem",
+                                                            color: colors.text,
+                                                            backgroundColor: "transparent",
+                                                            border: "1px solid transparent",
+                                                            borderRadius: "4px",
+                                                            flexGrow: 1,
+                                                            padding: "4px",
+                                                            lineHeight: 1.4
+                                                        }}
+                                                    />
+                                                    <button
+                                                        className="no-print"
+                                                        onClick={() => handleDeleteBullet(index, i)}
+                                                        style={{
+                                                            color: "#ef4444",
+                                                            backgroundColor: "transparent",
+                                                            border: "none",
+                                                            cursor: "pointer",
+                                                            padding: "4px 8px",
+                                                            opacity: 0.5
+                                                        }}
+                                                    >
+                                                        ×
+                                                    </button>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <button
+                                            className="no-print"
+                                            onClick={() => handleAddBullet(index)}
+                                            style={{
+                                                color: colors.accent,
+                                                backgroundColor: "transparent",
+                                                border: "none",
+                                                fontWeight: 700,
+                                                fontSize: "0.9rem",
+                                                cursor: "pointer",
+                                                marginTop: "20px",
+                                                display: "inline-flex",
+                                                alignItems: "center",
+                                                gap: "4px"
+                                            }}
+                                        >
+                                            ➕ Add Point
+                                        </button>
+                                    </div>
+
+                                    {/* Slide Visual / Diagram Preview */}
+                                    {slide.visual_suggestion && (
+                                        <div style={{
+                                            display: "flex",
+                                            flexDirection: "column",
+                                            gap: "16px",
+                                            order: index % 2 === 0 ? 1 : 2,
+                                            height: "100%",
+                                            justifyContent: "center"
+                                        }}>
+                                            <div style={{
+                                                backgroundColor: colors.cardBg,
+                                                border: `1.5px solid ${colors.border}`,
+                                                borderRadius: "18px",
+                                                padding: "24px",
+                                                boxShadow: "0 10px 15px -3px rgba(0,0,0,0.01), 0 4px 6px -2px rgba(0,0,0,0.005)"
+                                            }}>
+                                                <DiagramWidget
+                                                    suggestion={slide.visual_suggestion || ""}
+                                                    content={slide.content}
+                                                    colors={colors}
+                                                    diagram={slide.diagram}
+                                                />
+                                            </div>
+
+                                            {/* Edit Recommendation Box */}
+                                            <div className="no-print" style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                                                <label style={{ fontSize: "0.75rem", fontWeight: 700, color: colors.muted }}>
+                                                    Visual Suggestion Text:
+                                                </label>
+                                                <textarea
+                                                    value={slide.visual_suggestion || ""}
+                                                    onChange={(e) => handleUpdateVisual(index, e.target.value)}
+                                                    style={{
+                                                        fontSize: "0.8rem",
+                                                        color: colors.text,
+                                                        backgroundColor: colors.bg,
+                                                        border: `1px solid ${colors.border}`,
+                                                        borderRadius: "6px",
+                                                        padding: "6px 10px",
+                                                        resize: "none",
+                                                        height: "36px"
+                                                    }}
+                                                />
+                                            </div>
+                                        </div>
+                                    )}
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        ))}
 
-                    <button
-                        className="no-print"
-                        onClick={handleAddSlide}
-                        style={{
-                            border: `2px dashed ${colors.border}`,
-                            color: colors.muted,
-                            backgroundColor: "transparent",
-                            padding: "20px",
-                            borderRadius: "16px",
-                            fontSize: "1.1rem",
-                            fontWeight: 600,
-                            cursor: "pointer",
-                            transition: "all 0.2s ease"
-                        }}
-                    >
-                        ➕ Add New Blank Slide
-                    </button>
+                        <button
+                            className="no-print"
+                            onClick={handleAddSlide}
+                            style={{
+                                border: `2px dashed ${colors.border}`,
+                                color: colors.muted,
+                                backgroundColor: "transparent",
+                                padding: "24px",
+                                borderRadius: "20px",
+                                fontSize: "1.1rem",
+                                fontWeight: 700,
+                                cursor: "pointer",
+                                transition: "all 0.2s ease",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                gap: "8px"
+                            }}
+                        >
+                            ➕ Add New Blank Slide
+                        </button>
+                    </div>
                 </div>
             )}
         </div>

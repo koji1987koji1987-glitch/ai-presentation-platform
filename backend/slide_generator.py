@@ -2,9 +2,122 @@ import json
 import os
 import sys
 
-def rule_based_fallback(text):
+def rule_based_fallback(text, user_prompt=None):
     import re
     from collections import Counter
+    
+    # If text is empty or very short, but user_prompt is present, generate a nice 5-slide template outline based on the prompt!
+    if (not text or len(text.strip()) < 10) and user_prompt:
+        topic = user_prompt.strip()
+        topic_title = topic[:50] + "..." if len(topic) > 50 else topic
+        return {
+            "theme": "slate",
+            "slides": [
+                {
+                    "title": f"Introduction to {topic_title}",
+                    "content": [
+                        f"Core overview and background of {topic}.",
+                        "Primary motivations and driving forces behind this topic.",
+                        "Key objectives and target themes for today's presentation."
+                    ],
+                    "visual_suggestion": f"A mind map centered on {topic_title}",
+                    "diagram": {
+                        "type": "mind_map",
+                        "data": {
+                            "title": "Core Concepts Map",
+                            "root": topic_title[:15],
+                            "items": [
+                                {"label": "Background", "detail": f"Historical and current context of {topic_title}"},
+                                {"label": "Objectives", "detail": "Primary targets and goals"},
+                                {"label": "Significance", "detail": "Why this topic matters today"}
+                            ]
+                        }
+                    }
+                },
+                {
+                    "title": "Key Foundations & Drivers",
+                    "content": [
+                        "Fundamental principles governing this area.",
+                        "Primary industry standards or core elements to consider.",
+                        "Key technological, environmental, or business drivers."
+                    ],
+                    "visual_suggestion": "A comparison matrix of the key drivers",
+                    "diagram": {
+                        "type": "matrix",
+                        "data": {
+                            "title": "Drivers & Foundations",
+                            "items": [
+                                {"label": "Driver 1: Tech", "detail": "Innovations driving progression", "category": "q1"},
+                                {"label": "Driver 2: Market", "detail": "Consumer and industry demand", "category": "q2"},
+                                {"label": "Driver 3: Policy", "detail": "Regulatory changes and compliance", "category": "q3"},
+                                {"label": "Driver 4: Growth", "detail": "Scalability and future growth potential", "category": "q4"}
+                            ]
+                        }
+                    }
+                },
+                {
+                    "title": "Core Challenges & Roadblocks",
+                    "content": [
+                        "Common barriers to implementation and deployment.",
+                        "Risk factors and mitigation strategies.",
+                        "Resource constraints or technical debt concerns."
+                    ],
+                    "visual_suggestion": "A risk matrix or frustration icon mapping bottlenecks",
+                    "diagram": {
+                        "type": "matrix",
+                        "data": {
+                            "title": "Risk / Issue Analysis",
+                            "items": [
+                                {"label": "Risk 1: Technical", "detail": "Integration and software constraints", "category": "q1"},
+                                {"label": "Risk 2: Financial", "detail": "Upfront capital and operational costs", "category": "q2"},
+                                {"label": "Risk 3: Adoption", "detail": "User friction and training requirements", "category": "q3"}
+                            ]
+                        }
+                    }
+                },
+                {
+                    "title": "Strategic Execution Plan",
+                    "content": [
+                        "Step-by-step roadmap for successful rollout.",
+                        "Key milestones and deliverables for each phase.",
+                        "Role definitions and alignment of resources."
+                    ],
+                    "visual_suggestion": "A horizontal timeline roadmap showing stages",
+                    "diagram": {
+                        "type": "timeline",
+                        "data": {
+                            "title": "Implementation Roadmap",
+                            "items": [
+                                {"label": "Phase 1: Research", "detail": "Gather requirements and align team"},
+                                {"label": "Phase 2: Pilot", "detail": "Test baseline prototype in isolated environment"},
+                                {"label": "Phase 3: Launch", "detail": "Full scale rollout with monitoring"},
+                                {"label": "Phase 4: Optimize", "detail": "Gather feedback and iterate on improvements"}
+                            ]
+                        }
+                    }
+                },
+                {
+                    "title": "Future Outlook & Conclusion",
+                    "content": [
+                        "Expected long-term outcomes and growth path.",
+                        "Summary of key takeaways and actionable next steps.",
+                        "Final conclusions and vision for the future."
+                    ],
+                    "visual_suggestion": "A flowchart mapping long-term operational flows",
+                    "diagram": {
+                        "type": "flowchart",
+                        "data": {
+                            "title": "Future Growth Flow",
+                            "items": [
+                                {"label": "Actionable Steps", "detail": "Immediate objectives to initiate"},
+                                {"label": "Scalability Path", "detail": "Process to expand coverage"},
+                                {"label": "Target State", "detail": "The ultimate future vision of success"}
+                            ]
+                        }
+                    }
+                }
+            ]
+        }
     
     # 1. Clean and split into lines and sentences
     lines = [line.strip() for line in text.split("\n") if line.strip()]
@@ -58,6 +171,11 @@ def rule_based_fallback(text):
         "using", "should", "could", "would", "about", "above", "after", "again", "against", "all", "am", "an", "and", "any", "are", "as", "at", "be", "because", "been", "before", "being", "below", "between", "both", "but", "by", "can", "cannot", "did", "do", "does", "doing", "down", "during", "each", "few", "for", "from", "further", "had", "has", "have", "having", "he", "her", "here", "hers", "herself", "him", "himself", "his", "how", "if", "in", "into", "is", "it", "its", "itself", "let", "me", "more", "most", "my", "myself", "no", "nor", "not", "of", "off", "on", "once", "only", "or", "other", "ought", "our", "ours", "ourselves", "out", "over", "own", "same", "she", "should", "so", "some", "such", "than", "that", "the", "their", "theirs", "them", "themselves", "then", "there", "these", "they", "this", "those", "through", "to", "too", "under", "until", "up", "very", "was", "we", "were", "what", "when", "where", "which", "while", "who", "whom", "why", "with", "you", "your", "yours", "yourself", "yourselves", "project", "program", "system", "severe", "encountering", "optimizing", "proposed", "planning", "making", "about", "other", "some", "more", "first", "second", "third", "next", "also", "then", "very", "done", "need", "should", "must", "want", "like", "work", "files", "here", "there", "report", "document", "present", "presentation", "slide", "slides"
     }
     filtered_words = [w for w in words if w not in stop_words]
+    if user_prompt:
+        prompt_words = re.findall(r'\b\w{4,15}\b', user_prompt.lower())
+        for w in prompt_words:
+            if w not in stop_words:
+                filtered_words.extend([w] * 5)
     word_freq = Counter(filtered_words)
     top_keywords = [item[0].capitalize() for item in word_freq.most_common(8)]
     while len(top_keywords) < 8:
@@ -393,17 +511,34 @@ def rule_based_fallback(text):
         "slides": slides
     }
 
-def generate_slides(text):
+def generate_slides(text, user_prompt=None):
+    if text and user_prompt:
+        instruction = (
+            f"The user has uploaded a document containing source material and provided the following instruction/focus topic: '{user_prompt}'.\n"
+            "Your task is to analyze the document content below and generate a structured presentation that is strictly aligned with the user's instruction/focus topic.\n"
+            "Focus the slides and slide contents specifically on information from the document that is contextually relevant to the user's instruction."
+        )
+    elif text:
+        instruction = (
+            "Your task is to analyze the document content below, identify the main themes, and generate a structured presentation "
+            "summarizing the document's key points."
+        )
+    else:
+        # Only user_prompt is provided
+        instruction = (
+            f"The user wants to generate a presentation on the following topic/prompt: '{user_prompt}'.\n"
+            "Since no source document was uploaded, you must use your knowledge to generate a comprehensive, accurate, "
+            "and contextually relevant presentation on this topic."
+        )
+
     prompt = (
         "You are a professional presentation generation system.\n"
-        "Your task is to analyze the document content below, identify the main themes, and output a structured presentation "
-        "as a JSON object containing 'theme' and 'slides' keys. "
-        "You should generate between 5 and 10 slides that represent a comprehensive and logical flow of the document.\n"
-        "Choose a suitable visual theme matching the document topic. Return one of: 'slate' (general/corporate/clean), 'dark' (technology/developer/modern), 'indigo' (creative/oceanic/professional), 'emerald' (eco/health/forest/growth), 'sakura' (food/wellness/peach/pink), or 'cobalt' (cool professional/IT/systems/blue).\n"
-        "First, analyze the contents and create custom, descriptive titles for each slide based on the specific topics "
-        "covered in the document (do not use generic titles like 'Slide 1' or 'Overview').\n"
-        "Do not just copy blocks of text. Instead, summarize and recompose the text under these custom slide titles into "
-        "brief, high-impact bullet points.\n\n"
+        f"{instruction}\n\n"
+        "You should generate between 5 and 10 slides that represent a comprehensive and logical flow.\n"
+        "Choose a suitable visual theme matching the topic. Return one of: 'slate' (general/corporate/clean), 'dark' (technology/developer/modern), 'indigo' (creative/oceanic/professional), 'emerald' (eco/health/forest/growth), 'sakura' (food/wellness/peach/pink), or 'cobalt' (cool professional/IT/systems/blue).\n"
+        "First, create custom, descriptive titles for each slide based on the specific topics "
+        "covered (do not use generic titles like 'Slide 1' or 'Overview').\n"
+        "Synthesize and write brief, high-impact bullet points.\n\n"
         "For each slide, you must also provide a structured layout/diagram proposal to visually display slide themes in a diagram.\n"
         "Each slide object in the array MUST have the following keys:\n"
         "- 'title': A custom, descriptive slide title based on your analysis.\n"
@@ -422,8 +557,14 @@ def generate_slides(text):
         "          \"category\": \"Optional category tag (use 'yes' or 'no' for decision_tree; 'entity_a' or 'entity_b' for erd; 'q1', 'q2', 'q3', 'q4' for matrix)\"\n"
         "        }\n"
         "      ]\n"
-        "    }\n"
-        "  }\n\n"
+    )
+
+    if text:
+        prompt += f"    }}\n  }}\n\nSource Document Content:\n{text[:12000]}\n\n"
+    else:
+        prompt += "    }\n  }}\n\n"
+
+    prompt += (
         "Choose the diagram type that fits the slide contents best. For example:\n"
         "- Use 'flowchart' for linear step-by-step processes or workflows.\n"
         "- Use 'timeline' for roadmaps, history, and schedules.\n"
@@ -434,7 +575,6 @@ def generate_slides(text):
         "- Use 'erd' for data relationship entity mappings (must have 2 items with 'entity_a' and 'entity_b' categories).\n"
         "- Use 'matrix' for comparative 2x2 grids, quadrant analyses, tables, or risk mappings (up to 4 items with categories 'q1', 'q2', 'q3', 'q4').\n"
         "- Use 'none' if no diagram is suitable.\n\n"
-        f"Document Content:\n{text[:12000]}\n\n"
         "Return only valid JSON matching this schema: "
         '{"theme": "slate", "slides": [{"title": "Custom Slide Title", "content": ["point 1", "point 2"], "visual_suggestion": "Description...", '
         '"diagram": {"type": "flowchart", "data": {"title": "Title", "items": [{"label": "Step 1", "detail": "Init"}]}}}]}'
@@ -497,13 +637,27 @@ def generate_slides(text):
 
     # 3. Local Rule-Based Fallback
     print("No valid API keys configured (Gemini or OpenAI). Running rule-based fallback...", file=sys.stderr)
-    return rule_based_fallback(text)
+    return rule_based_fallback(text, user_prompt)
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
         print(json.dumps([]))
         sys.exit(0)
         
-    input_text = sys.argv[1]
-    result = generate_slides(input_text)
+    input_arg = sys.argv[1]
+    
+    # Try parsing as JSON first
+    text = ""
+    prompt_text = None
+    try:
+        data = json.loads(input_arg)
+        if isinstance(data, dict):
+            text = data.get("text", "")
+            prompt_text = data.get("prompt", None)
+        else:
+            text = input_arg
+    except Exception:
+        text = input_arg
+        
+    result = generate_slides(text, prompt_text)
     print(json.dumps(result))
