@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useRouter } from "next/navigation";
 
 type DiagramItem = {
@@ -91,6 +91,50 @@ const themePalettes = {
 };
 
 type ThemeKey = keyof typeof themePalettes;
+
+function AutoGrowingTextarea({
+    value,
+    onChange,
+    style,
+    ...props
+}: {
+    value: string;
+    onChange: (val: string) => void;
+    style?: React.CSSProperties;
+    [key: string]: any;
+}) {
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+    const adjustHeight = () => {
+        const textarea = textareaRef.current;
+        if (textarea) {
+            textarea.style.height = "auto";
+            textarea.style.height = `${textarea.scrollHeight}px`;
+        }
+    };
+
+    useEffect(() => {
+        adjustHeight();
+    }, [value]);
+
+    return (
+        <textarea
+            ref={textareaRef}
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            rows={1}
+            style={{
+                resize: "none",
+                overflowY: "hidden",
+                width: "100%",
+                minWidth: "0",
+                ...style
+            }}
+            onInput={adjustHeight}
+            {...props}
+        />
+    );
+}
 
 export default function PresentationPage() {
     const [slides, setSlides] = useState<Slide[]>([]);
@@ -237,7 +281,7 @@ export default function PresentationPage() {
             minHeight: "100vh",
             transition: "all 0.3s ease"
         }}>
-            {/* CSS Print Stylesheet */}
+            {/* CSS Stylesheet */}
             <style dangerouslySetInnerHTML={{
                 __html: `
                 @media print {
@@ -263,6 +307,74 @@ export default function PresentationPage() {
                         justify-content: center !important;
                         background: #ffffff !important;
                         color: #000000 !important;
+                    }
+                }
+                
+                /* Responsive layout containers */
+                .editor-container {
+                    display: grid;
+                    grid-template-columns: 300px 1fr;
+                    gap: 40px;
+                    align-items: start;
+                }
+                
+                /* Slide card container overrides */
+                .slide-card-container {
+                    width: 100% !important;
+                    aspect-ratio: auto !important; /* Override 16/9 if content grows */
+                    min-height: 520px !important;
+                    height: auto !important;
+                    display: flex !important;
+                    flex-direction: column !important;
+                    justify-content: space-between !important;
+                    box-sizing: border-box !important;
+                    position: relative !important;
+                }
+                
+                /* Slide inner grid */
+                .slide-content-grid {
+                    display: grid !important;
+                    grid-template-columns: 1.2fr 1fr !important;
+                    gap: 36px !important;
+                    align-items: center !important;
+                    flex-grow: 1 !important;
+                    margin-top: 24px !important;
+                }
+                
+                .slide-content-grid.no-visual {
+                    grid-template-columns: 1fr !important;
+                }
+                
+                /* Bullet row and dynamic delete button hover states */
+                .bullet-row {
+                    display: flex;
+                    align-items: flex-start;
+                    gap: 14px;
+                    position: relative;
+                }
+                
+                .bullet-delete-btn {
+                    opacity: 0;
+                    transition: opacity 0.2s ease-in-out;
+                }
+                
+                .bullet-row:hover .bullet-delete-btn {
+                    opacity: 0.6;
+                }
+                
+                .bullet-row:hover .bullet-delete-btn:hover {
+                    opacity: 1;
+                }
+                
+                /* Media query for smaller displays/tablets */
+                @media (max-width: 1024px) {
+                    .editor-container {
+                        grid-template-columns: 1fr !important;
+                        gap: 24px !important;
+                    }
+                    .slide-content-grid {
+                        grid-template-columns: 1fr !important;
+                        gap: 24px !important;
                     }
                 }
             ` }} />
@@ -375,12 +487,7 @@ export default function PresentationPage() {
                     </p>
                 </div>
             ) : (
-                <div style={{
-                    display: "grid",
-                    gridTemplateColumns: "300px 1fr",
-                    gap: "40px",
-                    alignItems: "start"
-                }}>
+                <div className="editor-container">
                     {/* Left Column: Slide Outline Sidebar (Gamma.app style) */}
                     <div className="no-print" style={{
                         position: "sticky",
@@ -543,7 +650,7 @@ export default function PresentationPage() {
                             <div
                                 key={index}
                                 id={`slide-card-${index}`}
-                                className="slide-card"
+                                className={`slide-card slide-card-container`}
                                 onClick={() => setActiveSlideIndex(index)}
                                 style={{
                                     backgroundColor: colors.cardBg,
@@ -553,14 +660,7 @@ export default function PresentationPage() {
                                         ? `0 20px 30px -5px rgba(0, 0, 0, 0.05), 0 0 0 1.5px ${colors.accent}`
                                         : "0 4px 6px -1px rgba(0, 0, 0, 0.02)",
                                     padding: "48px 64px",
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    justifyContent: "space-between",
-                                    aspectRatio: "16/9",
-                                    minHeight: "560px",
-                                    boxSizing: "border-box",
-                                    transition: "all 0.3s ease",
-                                    position: "relative"
+                                    transition: "all 0.3s ease"
                                 }}
                             >
                                 {/* Slide Header (Stylized number + title input) */}
@@ -581,10 +681,9 @@ export default function PresentationPage() {
                                         }}>
                                             {String(index + 1).padStart(2, "0")}
                                         </span>
-                                        <input
-                                            type="text"
+                                        <AutoGrowingTextarea
                                             value={slide.title}
-                                            onChange={(e) => handleUpdateTitle(index, e.target.value)}
+                                            onChange={(val) => handleUpdateTitle(index, val)}
                                             style={{
                                                 fontSize: "1.8rem",
                                                 fontWeight: 800,
@@ -594,7 +693,8 @@ export default function PresentationPage() {
                                                 borderRadius: "6px",
                                                 width: "80%",
                                                 padding: "4px 8px",
-                                                fontFamily: "Georgia, serif"
+                                                fontFamily: "Georgia, serif",
+                                                outline: "none"
                                             }}
                                         />
                                     </div>
@@ -619,19 +719,12 @@ export default function PresentationPage() {
                                     </div>
                                 </div>
 
-                                <div style={{
-                                    display: "grid",
-                                    gridTemplateColumns: slide.visual_suggestion ? "1.2fr 1fr" : "1fr",
-                                    gap: "36px",
-                                    alignItems: "center",
-                                    flexGrow: 1,
-                                    marginTop: "24px"
-                                }}>
+                                <div className={`slide-content-grid ${slide.visual_suggestion ? "" : "no-visual"}`}>
                                     {/* Slide Bullet Points */}
                                     <div style={{ order: (slide.visual_suggestion && index % 2 === 0) ? 2 : 1 }}>
                                         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                                             {slide.content.map((point, i) => (
-                                                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "14px" }}>
+                                                <div key={i} className="bullet-row">
                                                     <span style={{
                                                         display: "inline-flex",
                                                         alignItems: "center",
@@ -641,29 +734,28 @@ export default function PresentationPage() {
                                                         borderRadius: "50%",
                                                         backgroundColor: colors.accentLight,
                                                         border: `1.5px solid ${colors.accent}`,
-                                                        marginTop: "4px",
+                                                        marginTop: "6px",
                                                         fontSize: "0.65rem",
                                                         color: colors.accent,
                                                         fontWeight: "bold",
                                                         flexShrink: 0
                                                     }}>✓</span>
-                                                    <input
-                                                        type="text"
+                                                    <AutoGrowingTextarea
                                                         value={point}
-                                                        onChange={(e) => handleUpdateBullet(index, i, e.target.value)}
+                                                        onChange={(val) => handleUpdateBullet(index, i, val)}
                                                         style={{
                                                             fontSize: "1.05rem",
                                                             color: colors.text,
                                                             backgroundColor: "transparent",
                                                             border: "1px solid transparent",
                                                             borderRadius: "4px",
-                                                            flexGrow: 1,
                                                             padding: "2px 4px",
-                                                            lineHeight: 1.6
+                                                            lineHeight: 1.6,
+                                                            outline: "none"
                                                         }}
                                                     />
                                                     <button
-                                                        className="no-print"
+                                                        className="no-print bullet-delete-btn"
                                                         onClick={() => handleDeleteBullet(index, i)}
                                                         style={{
                                                             color: "#ef4444",
@@ -671,7 +763,6 @@ export default function PresentationPage() {
                                                             border: "none",
                                                             cursor: "pointer",
                                                             padding: "4px 8px",
-                                                            opacity: 0.5
                                                         }}
                                                     >
                                                         ×
