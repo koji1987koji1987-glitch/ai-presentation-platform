@@ -550,9 +550,9 @@ export default function PresentationPage() {
                                     border: `1.5px solid ${activeSlideIndex === index ? colors.accent : colors.border}`,
                                     borderRadius: "24px",
                                     boxShadow: activeSlideIndex === index
-                                        ? `0 20px 25px -5px rgba(0, 0, 0, 0.04), 0 0 0 1.5px ${colors.accent}`
+                                        ? `0 20px 30px -5px rgba(0, 0, 0, 0.05), 0 0 0 1.5px ${colors.accent}`
                                         : "0 4px 6px -1px rgba(0, 0, 0, 0.02)",
-                                    padding: "48px",
+                                    padding: "48px 64px",
                                     display: "flex",
                                     flexDirection: "column",
                                     justifyContent: "space-between",
@@ -631,8 +631,22 @@ export default function PresentationPage() {
                                     <div style={{ order: (slide.visual_suggestion && index % 2 === 0) ? 2 : 1 }}>
                                         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                                             {slide.content.map((point, i) => (
-                                                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "10px" }}>
-                                                    <span style={{ color: colors.accent, fontWeight: "bold", marginTop: "4px", fontSize: "1.2rem" }}>•</span>
+                                                <div key={i} style={{ display: "flex", alignItems: "flex-start", gap: "14px" }}>
+                                                    <span style={{
+                                                        display: "inline-flex",
+                                                        alignItems: "center",
+                                                        justifyContent: "center",
+                                                        width: "18px",
+                                                        height: "18px",
+                                                        borderRadius: "50%",
+                                                        backgroundColor: colors.accentLight,
+                                                        border: `1.5px solid ${colors.accent}`,
+                                                        marginTop: "4px",
+                                                        fontSize: "0.65rem",
+                                                        color: colors.accent,
+                                                        fontWeight: "bold",
+                                                        flexShrink: 0
+                                                    }}>✓</span>
                                                     <input
                                                         type="text"
                                                         value={point}
@@ -644,8 +658,8 @@ export default function PresentationPage() {
                                                             border: "1px solid transparent",
                                                             borderRadius: "4px",
                                                             flexGrow: 1,
-                                                            padding: "4px",
-                                                            lineHeight: 1.4
+                                                            padding: "2px 4px",
+                                                            lineHeight: 1.6
                                                         }}
                                                     />
                                                     <button

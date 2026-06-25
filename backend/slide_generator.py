@@ -2,121 +2,149 @@ import json
 import os
 import sys
 
-def rule_based_fallback(text, user_prompt=None):
+def rule_based_fallback(text, user_prompt=None, requested_count=None):
     import re
     from collections import Counter
     
-    # If text is empty or very short, but user_prompt is present, generate a nice 5-slide template outline based on the prompt!
+    # If text is empty or very short, but user_prompt is present, generate a template outline based on the prompt!
     if (not text or len(text.strip()) < 10) and user_prompt:
         topic = user_prompt.strip()
         topic_title = topic[:50] + "..." if len(topic) > 50 else topic
-        return {
-            "theme": "slate",
-            "slides": [
-                {
-                    "title": f"Introduction to {topic_title}",
-                    "content": [
-                        f"Core overview and background of {topic}.",
-                        "Primary motivations and driving forces behind this topic.",
-                        "Key objectives and target themes for today's presentation."
-                    ],
-                    "visual_suggestion": f"A mind map centered on {topic_title}",
-                    "diagram": {
-                        "type": "mind_map",
-                        "data": {
-                            "title": "Core Concepts Map",
-                            "root": topic_title[:15],
-                            "items": [
-                                {"label": "Background", "detail": f"Historical and current context of {topic_title}"},
-                                {"label": "Objectives", "detail": "Primary targets and goals"},
-                                {"label": "Significance", "detail": "Why this topic matters today"}
-                            ]
-                        }
-                    }
-                },
-                {
-                    "title": "Key Foundations & Drivers",
-                    "content": [
-                        "Fundamental principles governing this area.",
-                        "Primary industry standards or core elements to consider.",
-                        "Key technological, environmental, or business drivers."
-                    ],
-                    "visual_suggestion": "A comparison matrix of the key drivers",
-                    "diagram": {
-                        "type": "matrix",
-                        "data": {
-                            "title": "Drivers & Foundations",
-                            "items": [
-                                {"label": "Driver 1: Tech", "detail": "Innovations driving progression", "category": "q1"},
-                                {"label": "Driver 2: Market", "detail": "Consumer and industry demand", "category": "q2"},
-                                {"label": "Driver 3: Policy", "detail": "Regulatory changes and compliance", "category": "q3"},
-                                {"label": "Driver 4: Growth", "detail": "Scalability and future growth potential", "category": "q4"}
-                            ]
-                        }
-                    }
-                },
-                {
-                    "title": "Core Challenges & Roadblocks",
-                    "content": [
-                        "Common barriers to implementation and deployment.",
-                        "Risk factors and mitigation strategies.",
-                        "Resource constraints or technical debt concerns."
-                    ],
-                    "visual_suggestion": "A risk matrix or frustration icon mapping bottlenecks",
-                    "diagram": {
-                        "type": "matrix",
-                        "data": {
-                            "title": "Risk / Issue Analysis",
-                            "items": [
-                                {"label": "Risk 1: Technical", "detail": "Integration and software constraints", "category": "q1"},
-                                {"label": "Risk 2: Financial", "detail": "Upfront capital and operational costs", "category": "q2"},
-                                {"label": "Risk 3: Adoption", "detail": "User friction and training requirements", "category": "q3"}
-                            ]
-                        }
-                    }
-                },
-                {
-                    "title": "Strategic Execution Plan",
-                    "content": [
-                        "Step-by-step roadmap for successful rollout.",
-                        "Key milestones and deliverables for each phase.",
-                        "Role definitions and alignment of resources."
-                    ],
-                    "visual_suggestion": "A horizontal timeline roadmap showing stages",
-                    "diagram": {
-                        "type": "timeline",
-                        "data": {
-                            "title": "Implementation Roadmap",
-                            "items": [
-                                {"label": "Phase 1: Research", "detail": "Gather requirements and align team"},
-                                {"label": "Phase 2: Pilot", "detail": "Test baseline prototype in isolated environment"},
-                                {"label": "Phase 3: Launch", "detail": "Full scale rollout with monitoring"},
-                                {"label": "Phase 4: Optimize", "detail": "Gather feedback and iterate on improvements"}
-                            ]
-                        }
-                    }
-                },
-                {
-                    "title": "Future Outlook & Conclusion",
-                    "content": [
-                        "Expected long-term outcomes and growth path.",
-                        "Summary of key takeaways and actionable next steps.",
-                        "Final conclusions and vision for the future."
-                    ],
-                    "visual_suggestion": "A flowchart mapping long-term operational flows",
-                    "diagram": {
-                        "type": "flowchart",
-                        "data": {
-                            "title": "Future Growth Flow",
-                            "items": [
-                                {"label": "Actionable Steps", "detail": "Immediate objectives to initiate"},
-                                {"label": "Scalability Path", "detail": "Process to expand coverage"},
-                                {"label": "Target State", "detail": "The ultimate future vision of success"}
-                            ]
-                        }
+        all_slides = [
+            {
+                "title": f"Introduction to {topic_title}",
+                "content": [
+                    f"Core overview and background of {topic}.",
+                    "Primary motivations and driving forces behind this topic.",
+                    "Key objectives and target themes for today's presentation."
+                ],
+                "visual_suggestion": f"A mind map centered on {topic_title}",
+                "diagram": {
+                    "type": "mind_map",
+                    "data": {
+                        "title": "Core Concepts Map",
+                        "root": topic_title[:15],
+                        "items": [
+                            {"label": "Background", "detail": f"Historical and current context of {topic_title}"},
+                            {"label": "Objectives", "detail": "Primary targets and goals"},
+                            {"label": "Significance", "detail": "Why this topic matters today"}
+                        ]
                     }
                 }
-            ]
+            },
+            {
+                "title": "Key Foundations & Drivers",
+                "content": [
+                    "Fundamental principles governing this area.",
+                    "Primary industry standards or core elements to consider.",
+                    "Key technological, environmental, or business drivers."
+                ],
+                "visual_suggestion": "A comparison matrix of the key drivers",
+                "diagram": {
+                    "type": "matrix",
+                    "data": {
+                        "title": "Drivers & Foundations",
+                        "items": [
+                            {"label": "Driver 1: Tech", "detail": "Innovations driving progression", "category": "q1"},
+                            {"label": "Driver 2: Market", "detail": "Consumer and industry demand", "category": "q2"},
+                            {"label": "Driver 3: Policy", "detail": "Regulatory changes and compliance", "category": "q3"},
+                            {"label": "Driver 4: Growth", "detail": "Scalability and future growth potential", "category": "q4"}
+                        ]
+                    }
+                }
+            },
+            {
+                "title": "Core Challenges & Roadblocks",
+                "content": [
+                    "Common barriers to implementation and deployment.",
+                    "Risk factors and mitigation strategies.",
+                    "Resource constraints or technical debt concerns."
+                ],
+                "visual_suggestion": "A risk matrix or frustration icon mapping bottlenecks",
+                "diagram": {
+                    "type": "matrix",
+                    "data": {
+                        "title": "Risk / Issue Analysis",
+                        "items": [
+                            {"label": "Risk 1: Technical", "detail": "Integration and software constraints", "category": "q1"},
+                            {"label": "Risk 2: Financial", "detail": "Upfront capital and operational costs", "category": "q2"},
+                            {"label": "Risk 3: Adoption", "detail": "User friction and training requirements", "category": "q3"}
+                        ]
+                    }
+                }
+            },
+            {
+                "title": "Strategic Execution Plan",
+                "content": [
+                    "Step-by-step roadmap for successful rollout.",
+                    "Key milestones and deliverables for each phase.",
+                    "Role definitions and alignment of resources."
+                ],
+                "visual_suggestion": "A horizontal timeline roadmap showing stages",
+                "diagram": {
+                    "type": "timeline",
+                    "data": {
+                        "title": "Implementation Roadmap",
+                        "items": [
+                            {"label": "Phase 1: Research", "detail": "Gather requirements and align team"},
+                            {"label": "Phase 2: Pilot", "detail": "Test baseline prototype in isolated environment"},
+                            {"label": "Phase 3: Launch", "detail": "Full scale rollout with monitoring"},
+                            {"label": "Phase 4: Optimize", "detail": "Gather feedback and iterate on improvements"}
+                        ]
+                    }
+                }
+            },
+            {
+                "title": "Future Outlook & Conclusion",
+                "content": [
+                    "Expected long-term outcomes and growth path.",
+                    "Summary of key takeaways and actionable next steps.",
+                    "Final conclusions and vision for the future."
+                ],
+                "visual_suggestion": "A flowchart mapping long-term operational flows",
+                "diagram": {
+                    "type": "flowchart",
+                    "data": {
+                        "title": "Future Growth Flow",
+                        "items": [
+                            {"label": "Actionable Steps", "detail": "Immediate objectives to initiate"},
+                            {"label": "Scalability Path", "detail": "Process to expand coverage"},
+                            {"label": "Target State", "detail": "The ultimate future vision of success"}
+                        ]
+                    }
+                }
+            }
+        ]
+        
+        # Adjust slides count based on requested count
+        if requested_count:
+            if requested_count <= len(all_slides):
+                all_slides = all_slides[:requested_count]
+            else:
+                while len(all_slides) < requested_count:
+                    all_slides.append({
+                        "title": f"Additional Focus Point {len(all_slides)+1}",
+                        "content": [
+                            f"Detailed examination on {topic}.",
+                            "Supporting arguments and operational plans.",
+                            "Actionable key takeaways."
+                        ],
+                        "visual_suggestion": "A conceptual mind map mapping variables",
+                        "diagram": {
+                            "type": "mind_map",
+                            "data": {
+                                "title": "Expanded Concepts",
+                                "root": "Insights",
+                                "items": [
+                                    {"label": "Context", "detail": "Supporting background context"},
+                                    {"label": "Action", "detail": "Tactical implementation step"}
+                                ]
+                            }
+                        }
+                    })
+        return {
+            "theme": "slate",
+            "slides": all_slides
         }
     
     # 1. Clean and split into lines and sentences
@@ -506,35 +534,75 @@ def rule_based_fallback(text, user_prompt=None):
     elif any(w in text_lower for w in ["ocean", "water", "sea", "river", "creative", "art", "music", "design", "marketing", "sales", "finance"]):
         selected_theme = "indigo"
         
+    # Enforce slide count limit on fallback if specified
+    if requested_count:
+        if requested_count <= len(slides):
+            slides = slides[:requested_count]
+        else:
+            while len(slides) < requested_count:
+                slides.append({
+                    "title": f"Additional Focus Point {len(slides)+1}",
+                    "content": [
+                        "Supporting details compiled from documentation context.",
+                        "Analysis of operational limitations and frameworks.",
+                        "Key actionable strategic points."
+                    ],
+                    "visual_suggestion": "A conceptual detail block",
+                    "diagram": {"type": "none", "data": {"title": "", "items": []}}
+                })
+
     return {
         "theme": selected_theme,
         "slides": slides
     }
 
 def generate_slides(text, user_prompt=None):
+    requested_count = None
+    if user_prompt:
+        import re
+        num_word_map = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10}
+        match = re.search(r'\b(\d+)\s*-?\s*slides?\b', user_prompt.lower())
+        if match:
+            requested_count = int(match.group(1))
+        else:
+            match_word = re.search(r'\b(one|two|three|four|five|six|seven|eight|nine|ten)\s*-?\s*slides?\b', user_prompt.lower())
+            if match_word:
+                requested_count = num_word_map[match_word.group(1)]
+
+    if requested_count:
+        requested_count = max(2, min(15, requested_count))
+
     if text and user_prompt:
         instruction = (
             f"The user has uploaded a document containing source material and provided the following instruction/focus topic: '{user_prompt}'.\n"
             "Your task is to analyze the document content below and generate a structured presentation that is strictly aligned with the user's instruction/focus topic.\n"
             "Focus the slides and slide contents specifically on information from the document that is contextually relevant to the user's instruction."
         )
+        if requested_count:
+            instruction += f" You MUST generate EXACTLY {requested_count} slides."
     elif text:
         instruction = (
             "Your task is to analyze the document content below, identify the main themes, and generate a structured presentation "
             "summarizing the document's key points."
         )
+        if requested_count:
+            instruction += f" You MUST generate EXACTLY {requested_count} slides."
     else:
         # Only user_prompt is provided
         instruction = (
             f"The user wants to generate a presentation on the following topic/prompt: '{user_prompt}'.\n"
-            "Since no source document was uploaded, you must use your knowledge to generate a comprehensive, accurate, "
-            "and contextually relevant presentation on this topic."
+            f"Since no source document was uploaded, you must use your knowledge to generate a comprehensive, accurate, "
+            f"and contextually relevant presentation on this topic. You MUST generate EXACTLY {requested_count} slides." if requested_count else
+            f"Since no source document was uploaded, you must use your knowledge to generate a comprehensive, accurate, "
+            f"and contextually relevant presentation on this topic."
         )
+
+    slide_count_guideline = f"You MUST generate EXACTLY {requested_count} slides. Do not generate more, and do not generate fewer. This is a hard constraint." if requested_count else "You should generate between 5 and 10 slides that represent a comprehensive and logical flow."
 
     prompt = (
         "You are a professional presentation generation system.\n"
         f"{instruction}\n\n"
-        "You should generate between 5 and 10 slides that represent a comprehensive and logical flow.\n"
+        f"{slide_count_guideline}\n"
         "Choose a suitable visual theme matching the topic. Return one of: 'slate' (general/corporate/clean), 'dark' (technology/developer/modern), 'indigo' (creative/oceanic/professional), 'emerald' (eco/health/forest/growth), 'sakura' (food/wellness/peach/pink), or 'cobalt' (cool professional/IT/systems/blue).\n"
         "First, create custom, descriptive titles for each slide based on the specific topics "
         "covered (do not use generic titles like 'Slide 1' or 'Overview').\n"
@@ -637,7 +705,7 @@ def generate_slides(text, user_prompt=None):
 
     # 3. Local Rule-Based Fallback
     print("No valid API keys configured (Gemini or OpenAI). Running rule-based fallback...", file=sys.stderr)
-    return rule_based_fallback(text, user_prompt)
+    return rule_based_fallback(text, user_prompt, requested_count)
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
