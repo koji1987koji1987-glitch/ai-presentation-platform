@@ -146,7 +146,6 @@ export default function Home() {
                 <nav style={{ display: "flex", gap: "32px", fontSize: "0.95rem", fontWeight: 600 }}>
                     <a href="#features" style={{ color: "#94a3b8", textDecoration: "none", transition: "color 0.2s" }} className="hover:text-white">Features</a>
                     <a href="#how-it-works" style={{ color: "#94a3b8", textDecoration: "none", transition: "color 0.2s" }} className="hover:text-white">How It Works</a>
-                    <a href="https://github.com" target="_blank" rel="noreferrer" style={{ color: "#94a3b8", textDecoration: "none", transition: "color 0.2s" }} className="hover:text-white">GitHub</a>
                 </nav>
 
                 <button

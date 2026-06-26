@@ -20,10 +20,19 @@ type Diagram = {
     data: DiagramData;
 };
 
+type SlideImage = {
+    url: string;
+    keyword: string;
+    width: number;
+    position: "left" | "right" | "top" | "none";
+};
+
 type Slide = {
     title: string;
     content: string[];
     visual_suggestion?: string;
+    image_keyword?: string;
+    image?: SlideImage;
     diagram?: Diagram;
 };
 
@@ -142,8 +151,188 @@ export default function PresentationPage() {
     const [activeTheme, setActiveTheme] = useState<ThemeKey>("slate");
     const [activeSlideIndex, setActiveSlideIndex] = useState(0);
 
+    // Image search state
+    const [searchModalOpen, setSearchModalOpen] = useState(false);
+    const [activeSearchSlideIndex, setActiveSearchSlideIndex] = useState<number | null>(null);
+    const [searchQuery, setSearchQuery] = useState("");
+    const [searchResults, setSearchResults] = useState<any[]>([]);
+    const [isSearching, setIsSearching] = useState(false);
+
     const router = useRouter();
     const colors = themePalettes[activeTheme];
+
+    // Image Handlers
+    const handleUpdateSlideImage = (slideIndex: number, updatedImage: SlideImage | undefined) => {
+        const updated = [...slides];
+        updated[slideIndex].image = updatedImage;
+        setSlides(updated);
+        localStorage.setItem("slides", JSON.stringify(updated));
+    };
+
+    const openImageSearch = async (slideIndex: number, keyword: string) => {
+        setActiveSearchSlideIndex(slideIndex);
+        setSearchQuery(keyword || slides[slideIndex].title || "");
+        setSearchModalOpen(true);
+        setIsSearching(true);
+        setSearchResults([]);
+        try {
+            const res = await fetch(`/api/images?query=${encodeURIComponent(keyword || slides[slideIndex].title || "presentation")}`);
+            if (res.ok) {
+                const data = await res.json();
+                setSearchResults(data);
+            }
+        } catch (err) {
+            console.error("Failed to load search results:", err);
+        } finally {
+            setIsSearching(false);
+        }
+    };
+
+    const handleSearchPhotos = async () => {
+        if (!searchQuery.trim()) return;
+        setIsSearching(true);
+        try {
+            const res = await fetch(`/api/images?query=${encodeURIComponent(searchQuery)}`);
+            if (res.ok) {
+                const data = await res.json();
+                setSearchResults(data);
+            }
+        } catch (err) {
+            console.error("Failed to search photos:", err);
+        } finally {
+            setIsSearching(false);
+        }
+    };
+
+    const selectPhoto = (photoUrl: string) => {
+        if (activeSearchSlideIndex === null) return;
+        const currentImage = slides[activeSearchSlideIndex].image || {
+            url: "",
+            keyword: searchQuery,
+            width: 100,
+            position: "right"
+        };
+        handleUpdateSlideImage(activeSearchSlideIndex, {
+            ...currentImage,
+            url: photoUrl,
+            keyword: searchQuery
+        });
+        setSearchModalOpen(false);
+        setActiveSearchSlideIndex(null);
+    };
+
+    const getGridCols = (slide: Slide) => {
+        const hasDiagram = !!(slide.visual_suggestion || (slide.diagram && slide.diagram.type !== "none"));
+        const hasSideImage = !!(slide.image && slide.image.position !== "none" && slide.image.position !== "top");
+        
+        if (hasDiagram && hasSideImage) {
+            return "1fr 1fr 1fr";
+        } else if (hasDiagram || hasSideImage) {
+            return "1.2fr 1fr";
+        }
+        return "1fr";
+    };
+
+    // Render Slide Image Helper
+    const renderSlideImage = (slide: Slide, index: number) => {
+        if (!slide.image || slide.image.position === "none") return null;
+        return (
+            <div className="slide-image-wrapper" style={{
+                position: "relative",
+                borderRadius: "16px",
+                overflow: "hidden",
+                width: `${slide.image.width || 100}%`,
+                margin: "0 auto",
+                border: `1px solid ${colors.border}`,
+                boxShadow: "0 4px 10px rgba(0,0,0,0.03)",
+                transition: "all 0.3s ease"
+            }}>
+                <img 
+                    src={slide.image.url} 
+                    alt={slide.image.keyword} 
+                    style={{
+                        width: "100%",
+                        height: "220px",
+                        objectFit: "cover",
+                        display: "block"
+                    }} 
+                />
+                
+                {/* Hover Controls (Gamma style) */}
+                <div className="no-print image-hover-controls" style={{
+                    position: "absolute",
+                    inset: 0,
+                    backgroundColor: "rgba(15, 23, 42, 0.75)",
+                    backdropFilter: "blur(4px)",
+                    display: "flex",
+                    flexDirection: "column",
+                    justifyContent: "center",
+                    alignItems: "center",
+                    gap: "8px",
+                    opacity: 0,
+                    transition: "opacity 0.2s ease",
+                    padding: "12px"
+                }}>
+                    <button
+                        onClick={() => openImageSearch(index, slide.image?.keyword || "")}
+                        className="image-control-btn"
+                        style={{
+                            backgroundColor: colors.accent,
+                            color: "white",
+                            border: "none",
+                            borderRadius: "6px",
+                            padding: "6px 12px",
+                            fontSize: "0.78rem",
+                            fontWeight: 700,
+                            cursor: "pointer",
+                            boxShadow: "0 2px 4px rgba(0,0,0,0.15)"
+                        }}
+                    >
+                        🔍 Replace Image
+                    </button>
+                    
+                    {/* Position selection buttons */}
+                    <div style={{ display: "flex", gap: "4px", marginTop: "4px" }}>
+                        {(["left", "right", "top", "none"] as const).map((pos) => (
+                            <button
+                                key={pos}
+                                onClick={() => handleUpdateSlideImage(index, { ...slide.image!, position: pos })}
+                                style={{
+                                    backgroundColor: slide.image?.position === pos ? colors.accent : "rgba(255,255,255,0.25)",
+                                    color: "white",
+                                    border: "none",
+                                    borderRadius: "4px",
+                                    padding: "3px 6px",
+                                    fontSize: "0.68rem",
+                                    fontWeight: "bold",
+                                    cursor: "pointer",
+                                    textTransform: "capitalize"
+                                }}
+                            >
+                                {pos}
+                            </button>
+                        ))}
+                    </div>
+                    
+                    {/* Resize Slider */}
+                    <div style={{ width: "90%", display: "flex", flexDirection: "column", alignItems: "center", gap: "2px", marginTop: "6px" }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", width: "100%", fontSize: "0.62rem", color: "#ddd" }}>
+                            <span>Resize Width</span>
+                            <span>{slide.image?.width || 100}%</span>
+                        </div>
+                        <input 
+                            type="range" 
+                            min="30" 
+                            max="100" 
+                            value={slide.image?.width || 100}
+                            onChange={(e) => handleUpdateSlideImage(index, { ...slide.image!, width: parseInt(e.target.value) })}
+                            style={{ width: "100%", accentColor: colors.accent, cursor: "ew-resize" }}
+                        />
+                    </div>
+                </div>
+            </div>
+        );
+    };
 
     useEffect(() => {
         const savedSlides = localStorage.getItem("slides");
@@ -366,13 +555,33 @@ export default function PresentationPage() {
                     opacity: 1;
                 }
                 
+                /* Slide image hover controls */
+                .slide-image-wrapper:hover .image-hover-controls {
+                    opacity: 1 !important;
+                }
+                
+                .image-control-btn {
+                    transition: all 0.2s ease;
+                }
+                .image-control-btn:hover {
+                    transform: scale(1.05);
+                }
+                
+                .search-photo-item:hover {
+                    transform: scale(1.03);
+                    box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+                }
+                .search-photo-item:hover .photo-item-overlay {
+                    opacity: 1 !important;
+                }
+
                 /* Media query for smaller displays/tablets */
                 @media (max-width: 1024px) {
                     .editor-container {
                         grid-template-columns: 1fr !important;
                         gap: 24px !important;
                     }
-                    .slide-content-grid {
+                    .slide-content-grid, .slide-content-layout {
                         grid-template-columns: 1fr !important;
                         gap: 24px !important;
                     }
@@ -718,10 +927,34 @@ export default function PresentationPage() {
                                         </button>
                                     </div>
                                 </div>
+                                                     {/* Slide Top Cover Image */}
+                                {slide.image && slide.image.position === "top" && (
+                                <div style={{ marginTop: "24px" }}>
+                                        {renderSlideImage(slide, index)}
+                                    </div>
+                                )}
 
-                                <div className={`slide-content-grid ${slide.visual_suggestion ? "" : "no-visual"}`}>
-                                    {/* Slide Bullet Points */}
-                                    <div style={{ order: (slide.visual_suggestion && index % 2 === 0) ? 2 : 1 }}>
+                                <div 
+                                    className="slide-content-layout"
+                                    style={{
+                                        display: "grid",
+                                        gridTemplateColumns: getGridCols(slide),
+                                        gap: "36px",
+                                        alignItems: "center",
+                                        flexGrow: 1,
+                                        width: "100%",
+                                        marginTop: "24px"
+                                    }}
+                                >
+                                    {/* Column 1: Image (Left position) */}
+                                    {slide.image && slide.image.position === "left" && (
+                                        <div style={{ order: 1 }}>
+                                            {renderSlideImage(slide, index)}
+                                        </div>
+                                    )}
+
+                                    {/* Column 2: Slide Bullet Points */}
+                                    <div style={{ order: (slide.image && slide.image.position === "left") ? 2 : 1, width: "100%" }}>
                                         <div style={{ display: "flex", flexDirection: "column", gap: "16px" }}>
                                             {slide.content.map((point, i) => (
                                                 <div key={i} className="bullet-row">
@@ -751,7 +984,8 @@ export default function PresentationPage() {
                                                             borderRadius: "4px",
                                                             padding: "2px 4px",
                                                             lineHeight: 1.6,
-                                                            outline: "none"
+                                                            outline: "none",
+                                                            flexGrow: 1
                                                         }}
                                                     />
                                                     <button
@@ -770,33 +1004,57 @@ export default function PresentationPage() {
                                                 </div>
                                             ))}
                                         </div>
-                                        <button
-                                            className="no-print"
-                                            onClick={() => handleAddBullet(index)}
-                                            style={{
-                                                color: colors.accent,
-                                                backgroundColor: "transparent",
-                                                border: "none",
-                                                fontWeight: 700,
-                                                fontSize: "0.9rem",
-                                                cursor: "pointer",
-                                                marginTop: "20px",
-                                                display: "inline-flex",
-                                                alignItems: "center",
-                                                gap: "4px"
-                                            }}
-                                        >
-                                            ➕ Add Point
-                                        </button>
+                                        <div style={{ display: "flex", alignItems: "center" }}>
+                                            <button
+                                                className="no-print"
+                                                onClick={() => handleAddBullet(index)}
+                                                style={{
+                                                    color: colors.accent,
+                                                    backgroundColor: "transparent",
+                                                    border: "none",
+                                                    fontWeight: 700,
+                                                    fontSize: "0.9rem",
+                                                    cursor: "pointer",
+                                                    marginTop: "20px",
+                                                    display: "inline-flex",
+                                                    alignItems: "center",
+                                                    gap: "4px"
+                                                }}
+                                            >
+                                                ➕ Add Point
+                                            </button>
+                                            
+                                            {(!slide.image || slide.image.position === "none") && (
+                                                <button
+                                                    className="no-print"
+                                                    onClick={() => openImageSearch(index, slide.image_keyword || slide.title || "")}
+                                                    style={{
+                                                        color: colors.accent,
+                                                        backgroundColor: "transparent",
+                                                        border: "none",
+                                                        fontWeight: 700,
+                                                        fontSize: "0.9rem",
+                                                        cursor: "pointer",
+                                                        marginTop: "20px",
+                                                        marginLeft: "16px",
+                                                        display: "inline-flex",
+                                                        alignItems: "center",
+                                                        gap: "4px"
+                                                    }}
+                                                >
+                                                    🖼️ Add Image
+                                                </button>
+                                            )}
+                                        </div>
                                     </div>
 
-                                    {/* Slide Visual / Diagram Preview */}
+                                    {/* Column 3: Slide Visual / Diagram Preview */}
                                     {slide.visual_suggestion && (
                                         <div style={{
                                             display: "flex",
                                             flexDirection: "column",
                                             gap: "16px",
-                                            order: index % 2 === 0 ? 1 : 2,
+                                            order: (slide.image && slide.image.position === "left") ? 3 : 2,
                                             height: "100%",
                                             justifyContent: "center"
                                         }}>
@@ -837,6 +1095,13 @@ export default function PresentationPage() {
                                             </div>
                                         </div>
                                     )}
+
+                                    {/* Column 4: Image (Right position) */}
+                                    {slide.image && slide.image.position === "right" && (
+                                        <div style={{ order: 3 }}>
+                                            {renderSlideImage(slide, index)}
+                                        </div>
+                                    )}
                                 </div>
                             </div>
                         ))}
@@ -862,6 +1127,140 @@ export default function PresentationPage() {
                         >
                             ➕ Add New Blank Slide
                         </button>
+                    </div>
+                </div>
+            )}
+            {/* Unsplash Image Search Modal Dialog */}
+            {searchModalOpen && (
+                <div style={{
+                    position: "fixed",
+                    inset: 0,
+                    backgroundColor: "rgba(15, 23, 42, 0.7)",
+                    backdropFilter: "blur(8px)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    zIndex: 1000,
+                    animation: "fadeIn 0.2s ease-out"
+                }}>
+                    <div style={{
+                        backgroundColor: colors.cardBg,
+                        border: `1.5px solid ${colors.border}`,
+                        borderRadius: "24px",
+                        width: "550px",
+                        maxWidth: "90%",
+                        padding: "28px",
+                        boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "20px"
+                    }}>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                            <h3 style={{ fontSize: "1.3rem", fontWeight: 800, color: colors.text, margin: 0 }}>
+                                🖼️ Search Presentation Images
+                            </h3>
+                            <button
+                                onClick={() => {
+                                    setSearchModalOpen(false);
+                                    setActiveSearchSlideIndex(null);
+                                }}
+                                style={{
+                                    background: "none",
+                                    border: "none",
+                                    fontSize: "1.5rem",
+                                    color: colors.muted,
+                                    cursor: "pointer"
+                                }}
+                            >
+                                &times;
+                            </button>
+                        </div>
+
+                        <div style={{ display: "flex", gap: "10px" }}>
+                            <input
+                                type="text"
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
+                                onKeyDown={(e) => {
+                                    if (e.key === "Enter") handleSearchPhotos();
+                                }}
+                                placeholder="Type keywords e.g. food safety, tech..."
+                                style={{
+                                    flexGrow: 1,
+                                    padding: "10px 14px",
+                                    borderRadius: "10px",
+                                    border: `1px solid ${colors.border}`,
+                                    backgroundColor: colors.bg,
+                                    color: colors.text,
+                                    fontSize: "0.95rem",
+                                    outline: "none"
+                                }}
+                            />
+                            <button
+                                onClick={handleSearchPhotos}
+                                style={{
+                                    backgroundColor: colors.accent,
+                                    color: "white",
+                                    border: "none",
+                                    borderRadius: "10px",
+                                    padding: "10px 20px",
+                                    fontSize: "0.95rem",
+                                    fontWeight: "bold",
+                                    cursor: "pointer"
+                                }}
+                            >
+                                Search
+                            </button>
+                        </div>
+
+                        <div style={{
+                            maxHeight: "320px",
+                            overflowY: "auto",
+                            display: "grid",
+                            gridTemplateColumns: "repeat(3, 1fr)",
+                            gap: "12px",
+                            padding: "4px"
+                        }}>
+                            {isSearching ? (
+                                <div style={{ gridColumn: "span 3", textAlign: "center", padding: "40px 0", color: colors.muted }}>
+                                    Searching high-quality photos...
+                                </div>
+                            ) : searchResults.length === 0 ? (
+                                <div style={{ gridColumn: "span 3", textAlign: "center", padding: "40px 0", color: colors.muted }}>
+                                    No images found. Try searching another keyword.
+                                </div>
+                            ) : (
+                                searchResults.map((photo) => (
+                                    <div
+                                        key={photo.id}
+                                        onClick={() => selectPhoto(photo.url)}
+                                        style={{
+                                            borderRadius: "12px",
+                                            overflow: "hidden",
+                                            height: "90px",
+                                            cursor: "pointer",
+                                            border: `2px solid transparent`,
+                                            transition: "all 0.2s ease",
+                                            position: "relative"
+                                        }}
+                                        className="search-photo-item"
+                                    >
+                                        <img
+                                            src={photo.thumb || photo.url}
+                                            alt={photo.description}
+                                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                        />
+                                        <div style={{
+                                            position: "absolute",
+                                            inset: 0,
+                                            backgroundColor: "rgba(0,0,0,0.2)",
+                                            opacity: 0,
+                                            transition: "opacity 0.2s"
+                                        }} className="photo-item-overlay" />
+                                    </div>
+                                ))
+                            )}
+                        </div>
                     </div>
                 </div>
             )}

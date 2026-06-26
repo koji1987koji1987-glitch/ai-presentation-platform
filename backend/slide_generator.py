@@ -2,6 +2,22 @@ import json
 import os
 import sys
 
+def load_env():
+    # Load .env file from the same directory as this script
+    script_dir = os.path.dirname(os.path.abspath(__file__))
+    env_path = os.path.join(script_dir, ".env")
+    if os.path.exists(env_path):
+        with open(env_path, "r", encoding="utf-8") as f:
+            for line in f:
+                line = line.strip()
+                if line and not line.startswith("#") and "=" in line:
+                    key, val = line.split("=", 1)
+                    os.environ[key.strip()] = val.strip()
+
+# Load env variables immediately on import
+load_env()
+
+
 def rule_based_fallback(text, user_prompt=None, requested_count=None):
     import re
     from collections import Counter
@@ -19,6 +35,7 @@ def rule_based_fallback(text, user_prompt=None, requested_count=None):
                     "Key objectives and target themes for today's presentation."
                 ],
                 "visual_suggestion": f"A mind map centered on {topic_title}",
+                "image_keyword": "introduction",
                 "diagram": {
                     "type": "mind_map",
                     "data": {
@@ -40,6 +57,7 @@ def rule_based_fallback(text, user_prompt=None, requested_count=None):
                     "Key technological, environmental, or business drivers."
                 ],
                 "visual_suggestion": "A comparison matrix of the key drivers",
+                "image_keyword": "foundation",
                 "diagram": {
                     "type": "matrix",
                     "data": {
@@ -61,6 +79,7 @@ def rule_based_fallback(text, user_prompt=None, requested_count=None):
                     "Resource constraints or technical debt concerns."
                 ],
                 "visual_suggestion": "A risk matrix or frustration icon mapping bottlenecks",
+                "image_keyword": "challenges",
                 "diagram": {
                     "type": "matrix",
                     "data": {
@@ -81,6 +100,7 @@ def rule_based_fallback(text, user_prompt=None, requested_count=None):
                     "Role definitions and alignment of resources."
                 ],
                 "visual_suggestion": "A horizontal timeline roadmap showing stages",
+                "image_keyword": "strategy",
                 "diagram": {
                     "type": "timeline",
                     "data": {
@@ -102,6 +122,7 @@ def rule_based_fallback(text, user_prompt=None, requested_count=None):
                     "Final conclusions and vision for the future."
                 ],
                 "visual_suggestion": "A flowchart mapping long-term operational flows",
+                "image_keyword": "future",
                 "diagram": {
                     "type": "flowchart",
                     "data": {
@@ -130,6 +151,7 @@ def rule_based_fallback(text, user_prompt=None, requested_count=None):
                             "Actionable key takeaways."
                         ],
                         "visual_suggestion": "A conceptual mind map mapping variables",
+                        "image_keyword": "analysis",
                         "diagram": {
                             "type": "mind_map",
                             "data": {
@@ -513,10 +535,15 @@ def rule_based_fallback(text, user_prompt=None, requested_count=None):
                     "detail": dtl
                 })
 
+        # Simple extraction of keywords from title for image search
+        clean_words = [w for w in re.findall(r'\b\w{3,15}\b', title.lower()) if w not in stop_words]
+        img_kw = " ".join(clean_words[:2]) if clean_words else "presentation"
+
         slides.append({
             "title": title,
             "content": final_points,
             "visual_suggestion": visual,
+            "image_keyword": img_kw,
             "diagram": diagram
         })
         
@@ -548,6 +575,7 @@ def rule_based_fallback(text, user_prompt=None, requested_count=None):
                         "Key actionable strategic points."
                     ],
                     "visual_suggestion": "A conceptual detail block",
+                    "image_keyword": "analysis",
                     "diagram": {"type": "none", "data": {"title": "", "items": []}}
                 })
 
@@ -612,6 +640,7 @@ def generate_slides(text, user_prompt=None):
         "- 'title': A custom, descriptive slide title based on your analysis.\n"
         "- 'content': An array of 3 to 5 concise and meaningful bullet points summarizing the insights for that slide.\n"
         "- 'visual_suggestion': A short description of a diagram, flowchart, matrix, chart, or image that visually explains this slide's content.\n"
+        "- 'image_keyword': A single specific keyword or short phrase (1-2 words, e.g. 'food safety', 'agriculture', 'logistics') to fetch a relevant high-quality photo from Unsplash.\n"
         "- 'diagram': A structured JSON object describing the diagram elements. It MUST conform to this format:\n"
         "  {\n"
         "    \"type\": \"flowchart\" | \"timeline\" | \"org_chart\" | \"mind_map\" | \"decision_tree\" | \"architecture\" | \"erd\" | \"matrix\" | \"none\",\n"
@@ -644,7 +673,7 @@ def generate_slides(text, user_prompt=None):
         "- Use 'matrix' for comparative 2x2 grids, quadrant analyses, tables, or risk mappings (up to 4 items with categories 'q1', 'q2', 'q3', 'q4').\n"
         "- Use 'none' if no diagram is suitable.\n\n"
         "Return only valid JSON matching this schema: "
-        '{"theme": "slate", "slides": [{"title": "Custom Slide Title", "content": ["point 1", "point 2"], "visual_suggestion": "Description...", '
+        '{"theme": "slate", "slides": [{"title": "Custom Slide Title", "content": ["point 1", "point 2"], "visual_suggestion": "Description...", "image_keyword": "food safety", '
         '"diagram": {"type": "flowchart", "data": {"title": "Title", "items": [{"label": "Step 1", "detail": "Init"}]}}}]}'
     )
 

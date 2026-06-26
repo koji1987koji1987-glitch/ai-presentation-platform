@@ -62,9 +62,35 @@ export async function POST(request: Request) {
       payload,
     ]).toString();
 
-    const slides = JSON.parse(slidesOutput);
+    const data = JSON.parse(slidesOutput);
+    const slidesArray = data.slides || data;
 
-    return Response.json(slides);
+    if (Array.isArray(slidesArray)) {
+      for (const slide of slidesArray) {
+        if (slide.image_keyword && !slide.image) {
+          try {
+            const query = encodeURIComponent(slide.image_keyword);
+            const res = await fetch(`https://unsplash.com/napi/search/photos?query=${query}&per_page=3`);
+            if (res.ok) {
+              const resData = await res.json();
+              const photos = resData.results || [];
+              if (photos.length > 0) {
+                slide.image = {
+                  url: photos[0].urls?.regular || photos[0].urls?.small || "",
+                  keyword: slide.image_keyword,
+                  width: 100,
+                  position: "right"
+                };
+              }
+            }
+          } catch (e) {
+            console.error("Failed to resolve Unsplash image for slide in API:", e);
+          }
+        }
+      }
+    }
+
+    return Response.json(data);
   } catch (error: any) {
     console.error("Upload handler failed:", error);
     return Response.json(

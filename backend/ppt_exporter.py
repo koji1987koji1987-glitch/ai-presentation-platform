@@ -13,6 +13,38 @@ def apply_text_styling(paragraph, font_name="Arial", size_pt=18, color_rgb=(51, 
     paragraph.font.bold = bold
     paragraph.font.italic = italic
 
+def add_image_from_url(slide, url, left, top, width, height):
+    if not url:
+        return
+    import urllib.request
+    import tempfile
+    import os
+    import ssl
+    
+    try:
+        # Bypassing SSL verification on macOS
+        ssl_context = ssl._create_unverified_context()
+        # Add User-Agent to prevent 403 blocks
+        req = urllib.request.Request(
+            url,
+            headers={
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+            }
+        )
+        # Download image to a temp file
+        with urllib.request.urlopen(req, context=ssl_context, timeout=15) as response:
+            with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as temp_file:
+                temp_file.write(response.read())
+                temp_file_path = temp_file.name
+        
+        # Add to slide
+        slide.shapes.add_picture(temp_file_path, left, top, width=width, height=height)
+        
+        # Clean up temp file
+        os.unlink(temp_file_path)
+    except Exception as e:
+        print(f"Error adding image from {url}: {e}", file=sys.stderr)
+
 THEME_PALETTES = {
     "slate": {
         "bg": (248, 250, 252),
@@ -715,8 +747,30 @@ def main():
             fill.solid()
             fill.fore_color.rgb = RGBColor(*palette["bg"])
             
-            # Text box for title & description
-            txBox = slide.shapes.add_textbox(Inches(1.0), Inches(2.2), Inches(11.333), Inches(4.0))
+            # Extract image URL and layout position from slide data
+            image_data = slide_data.get("image")
+            image_url = None
+            image_pos = "none"
+            if image_data and isinstance(image_data, dict):
+                image_url = image_data.get("url")
+                image_pos = image_data.get("position", "none")
+                if not image_url:
+                    image_pos = "none"
+
+            if image_pos != "none":
+                if image_pos == "left":
+                    add_image_from_url(slide, image_url, Inches(0.8), Inches(1.5), Inches(4.7), Inches(5.1))
+                    txBox = slide.shapes.add_textbox(Inches(6.0), Inches(2.2), Inches(6.5), Inches(4.0))
+                elif image_pos == "top":
+                    add_image_from_url(slide, image_url, Inches(0.8), Inches(1.5), Inches(11.733), Inches(2.2))
+                    txBox = slide.shapes.add_textbox(Inches(1.0), Inches(4.0), Inches(11.333), Inches(3.0))
+                else:  # "right"
+                    add_image_from_url(slide, image_url, Inches(7.8), Inches(1.5), Inches(4.7), Inches(5.1))
+                    txBox = slide.shapes.add_textbox(Inches(1.0), Inches(2.2), Inches(6.0), Inches(4.0))
+            else:
+                # Text box for title & description
+                txBox = slide.shapes.add_textbox(Inches(1.0), Inches(2.2), Inches(11.333), Inches(4.0))
+                
             tf = txBox.text_frame
             tf.word_wrap = True
             
@@ -744,26 +798,37 @@ def main():
             p_title.text = title_text
             apply_text_styling(p_title, font_name="Georgia", size_pt=32, color_rgb=palette["text"], bold=True)
             
+            # Extract image URL and layout position from slide data
+            image_data = slide_data.get("image")
+            image_url = None
+            image_pos = "none"
+            if image_data and isinstance(image_data, dict):
+                image_url = image_data.get("url")
+                image_pos = image_data.get("position", "none")
+                if not image_url:
+                    image_pos = "none"
+
             # Determine alternating columns for PPT Designer layout
             is_even_slide = (idx % 2 == 0)
             content_left = Inches(6.0) if (is_even_slide and visual_suggestion) else Inches(0.8)
             
-            # Left/Right Column: Content Points
-            content_box = slide.shapes.add_textbox(content_left, Inches(1.8), Inches(6.5), Inches(4.8))
-            tf_content = content_box.text_frame
-            tf_content.word_wrap = True
-            
-            for p_idx, point in enumerate(content_points):
-                p = tf_content.add_paragraph() if p_idx > 0 else tf_content.paragraphs[0]
-                p.text = f"•  {point}"
-                apply_text_styling(p, font_name="Arial", size_pt=16, color_rgb=palette["text"])
-                p.space_after = Pt(14)
+            # 1. Slide has BOTH Diagram and Image
+            if visual_suggestion and image_pos != "none":
+                # Stacking: Text is at top-half of text column, Image is at bottom-half of text column
+                content_box = slide.shapes.add_textbox(content_left, Inches(1.6), Inches(6.5), Inches(2.6))
+                tf_content = content_box.text_frame
+                tf_content.word_wrap = True
+                for p_idx, point in enumerate(content_points):
+                    p = tf_content.add_paragraph() if p_idx > 0 else tf_content.paragraphs[0]
+                    p.text = f"•  {point}"
+                    apply_text_styling(p, font_name="Arial", size_pt=14, color_rgb=palette["text"])
+                    p.space_after = Pt(8)
                 
-            # Right/Left Column: Draw dynamic diagram if suggestion exists
-            if visual_suggestion:
+                # Image at bottom-half of text column
+                add_image_from_url(slide, image_url, content_left, Inches(4.3), Inches(6.5), Inches(2.5))
+                
+                # Diagram on the other side (full height card)
                 x_shift = -Inches(7.0) if is_even_slide else Inches(0)
-                
-                # Draw PPT Designer Card Background behind diagram
                 card_left = Inches(7.8) + x_shift
                 card = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, card_left, Inches(1.5), Inches(4.7), Inches(5.1))
                 card.fill.solid()
@@ -772,6 +837,78 @@ def main():
                 card.line.width = Pt(1.5)
                 
                 draw_diagram(slide, visual_suggestion, content_points, slide_data.get("diagram"), theme_name, x_shift)
+                
+            # 2. Slide has Diagram but NO Image
+            elif visual_suggestion:
+                content_box = slide.shapes.add_textbox(content_left, Inches(1.8), Inches(6.5), Inches(4.8))
+                tf_content = content_box.text_frame
+                tf_content.word_wrap = True
+                for p_idx, point in enumerate(content_points):
+                    p = tf_content.add_paragraph() if p_idx > 0 else tf_content.paragraphs[0]
+                    p.text = f"•  {point}"
+                    apply_text_styling(p, font_name="Arial", size_pt=16, color_rgb=palette["text"])
+                    p.space_after = Pt(14)
+                
+                x_shift = -Inches(7.0) if is_even_slide else Inches(0)
+                card_left = Inches(7.8) + x_shift
+                card = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, card_left, Inches(1.5), Inches(4.7), Inches(5.1))
+                card.fill.solid()
+                card.fill.fore_color.rgb = RGBColor(*palette["cardBg"])
+                card.line.color.rgb = RGBColor(*palette["border"])
+                card.line.width = Pt(1.5)
+                
+                draw_diagram(slide, visual_suggestion, content_points, slide_data.get("diagram"), theme_name, x_shift)
+                
+            # 3. Slide has NO Diagram but HAS Image
+            elif image_pos != "none":
+                if image_pos == "left":
+                    # Render image in left column, text in right column
+                    add_image_from_url(slide, image_url, Inches(0.8), Inches(1.5), Inches(4.7), Inches(5.1))
+                    
+                    content_box = slide.shapes.add_textbox(Inches(6.0), Inches(1.8), Inches(6.5), Inches(4.8))
+                    tf_content = content_box.text_frame
+                    tf_content.word_wrap = True
+                    for p_idx, point in enumerate(content_points):
+                        p = tf_content.add_paragraph() if p_idx > 0 else tf_content.paragraphs[0]
+                        p.text = f"•  {point}"
+                        apply_text_styling(p, font_name="Arial", size_pt=16, color_rgb=palette["text"])
+                        p.space_after = Pt(14)
+                elif image_pos == "top":
+                    # Render image on top, text below
+                    add_image_from_url(slide, image_url, Inches(0.8), Inches(1.5), Inches(11.733), Inches(2.5))
+                    
+                    content_box = slide.shapes.add_textbox(Inches(0.8), Inches(4.3), Inches(11.733), Inches(2.6))
+                    tf_content = content_box.text_frame
+                    tf_content.word_wrap = True
+                    for p_idx, point in enumerate(content_points):
+                        p = tf_content.add_paragraph() if p_idx > 0 else tf_content.paragraphs[0]
+                        p.text = f"•  {point}"
+                        apply_text_styling(p, font_name="Arial", size_pt=16, color_rgb=palette["text"])
+                        p.space_after = Pt(14)
+                else:  # default or "right"
+                    # Render text in left column, image in right column
+                    content_box = slide.shapes.add_textbox(Inches(0.8), Inches(1.8), Inches(6.5), Inches(4.8))
+                    tf_content = content_box.text_frame
+                    tf_content.word_wrap = True
+                    for p_idx, point in enumerate(content_points):
+                        p = tf_content.add_paragraph() if p_idx > 0 else tf_content.paragraphs[0]
+                        p.text = f"•  {point}"
+                        apply_text_styling(p, font_name="Arial", size_pt=16, color_rgb=palette["text"])
+                        p.space_after = Pt(14)
+                    
+                    add_image_from_url(slide, image_url, Inches(7.8), Inches(1.5), Inches(4.7), Inches(5.1))
+                
+            # 4. Slide has NEITHER Diagram nor Image
+            else:
+                # Full width text block
+                content_box = slide.shapes.add_textbox(Inches(0.8), Inches(1.8), Inches(11.7), Inches(4.8))
+                tf_content = content_box.text_frame
+                tf_content.word_wrap = True
+                for p_idx, point in enumerate(content_points):
+                    p = tf_content.add_paragraph() if p_idx > 0 else tf_content.paragraphs[0]
+                    p.text = f"•  {point}"
+                    apply_text_styling(p, font_name="Arial", size_pt=18, color_rgb=palette["text"])
+                    p.space_after = Pt(16)
 
     prs.save(output_path)
     print(f"PowerPoint saved successfully to: {output_path}")
