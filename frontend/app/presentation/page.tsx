@@ -24,7 +24,7 @@ type SlideImage = {
     url: string;
     keyword: string;
     width: number;
-    position: "left" | "right" | "top" | "none";
+    position: "left" | "right" | "top" | "background" | "none";
 };
 
 type Slide = {
@@ -34,6 +34,8 @@ type Slide = {
     image_keyword?: string;
     image?: SlideImage;
     diagram?: Diagram;
+    custom_bg?: string;
+    custom_bg_type?: "theme" | "solid" | "gradient";
 };
 
 const themePalettes = {
@@ -101,6 +103,38 @@ const themePalettes = {
 
 type ThemeKey = keyof typeof themePalettes;
 
+const BACKGROUND_PRESETS = [
+    { name: "Sunset Glow", value: "linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)", type: "gradient" as const },
+    { name: "Ocean Breeze", value: "linear-gradient(135deg, #a1c4fd 0%, #c2e9fb 100%)", type: "gradient" as const },
+    { name: "Emerald Forest", value: "linear-gradient(135deg, #d4fc79 0%, #96e6a1 100%)", type: "gradient" as const },
+    { name: "Royal Violet", value: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)", type: "gradient" as const },
+    { name: "Midnight Slate", value: "linear-gradient(135deg, #2c3e50 0%, #0f2027 100%)", type: "gradient" as const },
+    { name: "Warm Peach", value: "linear-gradient(135deg, #f6d365 0%, #fda085 100%)", type: "gradient" as const },
+    { name: "Charcoal Dark", value: "#1e293b", type: "solid" as const },
+    { name: "Light Paper", value: "#ffffff", type: "solid" as const }
+];
+
+const isDarkBackground = (customBg?: string, bgType?: string, activeTheme?: string) => {
+    if (!customBg || bgType === "theme") {
+        return activeTheme === "dark";
+    }
+    if (bgType === "gradient") {
+        const darkGradients = ["#2c3e50", "#667eea", "royal-violet", "midnight-slate"];
+        return darkGradients.some(val => customBg.toLowerCase().includes(val.toLowerCase()));
+    }
+    if (customBg.startsWith("#")) {
+        const hex = customBg.replace("#", "");
+        if (hex.length === 3 || hex.length === 6) {
+            const r = parseInt(hex.length === 3 ? hex[0]+hex[0] : hex.substring(0, 2), 16);
+            const g = parseInt(hex.length === 3 ? hex[1]+hex[1] : hex.substring(2, 4), 16);
+            const b = parseInt(hex.length === 3 ? hex[2]+hex[2] : hex.substring(4, 6), 16);
+            const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+            return luminance < 0.5;
+        }
+    }
+    return false;
+};
+
 function AutoGrowingTextarea({
     value,
     onChange,
@@ -158,13 +192,50 @@ export default function PresentationPage() {
     const [searchResults, setSearchResults] = useState<any[]>([]);
     const [isSearching, setIsSearching] = useState(false);
 
+    const [draggedSlideIndex, setDraggedSlideIndex] = useState<number | null>(null);
+    const [modalTab, setModalTab] = useState<"search" | "upload">("search");
+    const [modalDragOver, setModalDragOver] = useState(false);
+
     const router = useRouter();
     const colors = themePalettes[activeTheme];
+
+    const handleImageFileLoad = (file: File, slideIndex: number) => {
+        if (!file.type.startsWith("image/")) {
+            alert("Please drop a valid image file.");
+            return;
+        }
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            const dataUrl = e.target?.result as string;
+            if (dataUrl) {
+                const currentImage = slides[slideIndex].image || {
+                    url: "",
+                    keyword: file.name,
+                    width: 100,
+                    position: "right"
+                };
+                handleUpdateSlideImage(slideIndex, {
+                    ...currentImage,
+                    url: dataUrl,
+                    keyword: file.name
+                });
+            }
+        };
+        reader.readAsDataURL(file);
+    };
 
     // Image Handlers
     const handleUpdateSlideImage = (slideIndex: number, updatedImage: SlideImage | undefined) => {
         const updated = [...slides];
         updated[slideIndex].image = updatedImage;
+        setSlides(updated);
+        localStorage.setItem("slides", JSON.stringify(updated));
+    };
+
+    const handleUpdateSlideBackground = (slideIndex: number, bgValue: string, bgType: "theme" | "solid" | "gradient") => {
+        const updated = [...slides];
+        updated[slideIndex].custom_bg = bgValue;
+        updated[slideIndex].custom_bg_type = bgType;
         setSlides(updated);
         localStorage.setItem("slides", JSON.stringify(updated));
     };
@@ -223,7 +294,7 @@ export default function PresentationPage() {
 
     const getGridCols = (slide: Slide) => {
         const hasDiagram = !!(slide.visual_suggestion || (slide.diagram && slide.diagram.type !== "none"));
-        const hasSideImage = !!(slide.image && slide.image.position !== "none" && slide.image.position !== "top");
+        const hasSideImage = !!(slide.image && slide.image.position !== "none" && slide.image.position !== "top" && slide.image.position !== "background");
         
         if (hasDiagram && hasSideImage) {
             return "1fr 1fr 1fr";
@@ -235,7 +306,7 @@ export default function PresentationPage() {
 
     // Render Slide Image Helper
     const renderSlideImage = (slide: Slide, index: number) => {
-        if (!slide.image || slide.image.position === "none") return null;
+        if (!slide.image || slide.image.position === "none" || slide.image.position === "background") return null;
         return (
             <div className="slide-image-wrapper" style={{
                 position: "relative",
@@ -293,7 +364,7 @@ export default function PresentationPage() {
                     
                     {/* Position selection buttons */}
                     <div style={{ display: "flex", gap: "4px", marginTop: "4px" }}>
-                        {(["left", "right", "top", "none"] as const).map((pos) => (
+                        {(["left", "right", "top", "background", "none"] as const).map((pos) => (
                             <button
                                 key={pos}
                                 onClick={() => handleUpdateSlideImage(index, { ...slide.image!, position: pos })}
@@ -855,29 +926,62 @@ export default function PresentationPage() {
 
                     {/* Right Column: Main Slide Content */}
                     <div style={{ display: "flex", flexDirection: "column", gap: "40px", width: "100%" }}>
-                        {slides.map((slide, index) => (
-                            <div
-                                key={index}
-                                id={`slide-card-${index}`}
-                                className={`slide-card slide-card-container`}
-                                onClick={() => setActiveSlideIndex(index)}
-                                style={{
-                                    backgroundColor: colors.cardBg,
-                                    border: `1.5px solid ${activeSlideIndex === index ? colors.accent : colors.border}`,
-                                    borderRadius: "24px",
-                                    boxShadow: activeSlideIndex === index
-                                        ? `0 20px 30px -5px rgba(0, 0, 0, 0.05), 0 0 0 1.5px ${colors.accent}`
-                                        : "0 4px 6px -1px rgba(0, 0, 0, 0.02)",
-                                    padding: "48px 64px",
-                                    transition: "all 0.3s ease"
-                                }}
-                            >
+                        {slides.map((slide, index) => {
+                            const hasBgImage = !!(slide.image && slide.image.position === "background" && slide.image.url);
+                            const cardBackgroundStyle = hasBgImage 
+                                ? `linear-gradient(rgba(15, 23, 42, 0.75), rgba(15, 23, 42, 0.75)), url(${slide.image?.url})`
+                                : (slide.custom_bg || colors.cardBg);
+
+                            const isDark = hasBgImage || isDarkBackground(slide.custom_bg, slide.custom_bg_type, activeTheme);
+                            const slideTextColor = isDark ? "#f8fafc" : colors.text;
+                            const slideMutedColor = isDark ? "#cbd5e1" : colors.muted;
+                            const slideBorderColor = isDark ? "rgba(255, 255, 255, 0.15)" : colors.border;
+                            const slideBulletBg = isDark ? "rgba(255, 255, 255, 0.1)" : colors.accentLight;
+                            const slideBulletBorder = isDark ? "rgba(255, 255, 255, 0.3)" : colors.accent;
+                            const slideBulletColor = isDark ? "#f8fafc" : colors.accent;
+
+                            return (
+                                <div
+                                    key={index}
+                                    id={`slide-card-${index}`}
+                                    className={`slide-card slide-card-container`}
+                                    onClick={() => setActiveSlideIndex(index)}
+                                    onDragOver={(e) => {
+                                        e.preventDefault();
+                                        if (draggedSlideIndex !== index) {
+                                            setDraggedSlideIndex(index);
+                                        }
+                                    }}
+                                    onDragLeave={() => {
+                                        setDraggedSlideIndex(null);
+                                    }}
+                                    onDrop={(e) => {
+                                        e.preventDefault();
+                                        setDraggedSlideIndex(null);
+                                        if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                                            handleImageFileLoad(e.dataTransfer.files[0], index);
+                                        }
+                                    }}
+                                    style={{
+                                        background: cardBackgroundStyle,
+                                        backgroundSize: hasBgImage ? "cover" : undefined,
+                                        backgroundPosition: hasBgImage ? "center" : undefined,
+                                        border: `1.5px solid ${activeSlideIndex === index ? colors.accent : slideBorderColor}`,
+                                        borderRadius: "24px",
+                                        boxShadow: activeSlideIndex === index
+                                            ? `0 20px 30px -5px rgba(0, 0, 0, 0.05), 0 0 0 1.5px ${colors.accent}`
+                                            : "0 4px 6px -1px rgba(0, 0, 0, 0.02)",
+                                        padding: "48px 64px",
+                                        transition: "all 0.3s ease",
+                                        position: "relative"
+                                    }}
+                                >
                                 {/* Slide Header (Stylized number + title input) */}
                                 <div style={{
                                     display: "flex",
                                     justifyContent: "space-between",
                                     alignItems: "center",
-                                    borderBottom: `1px solid ${colors.border}80`,
+                                    borderBottom: `1px solid ${slideBorderColor}`,
                                     paddingBottom: "16px"
                                 }}>
                                     <div style={{ display: "flex", alignItems: "center", gap: "16px", width: "100%" }}>
@@ -896,7 +1000,7 @@ export default function PresentationPage() {
                                             style={{
                                                 fontSize: "1.8rem",
                                                 fontWeight: 800,
-                                                color: colors.text,
+                                                color: slideTextColor,
                                                 backgroundColor: "transparent",
                                                 border: "1px solid transparent",
                                                 borderRadius: "6px",
@@ -965,11 +1069,11 @@ export default function PresentationPage() {
                                                         width: "18px",
                                                         height: "18px",
                                                         borderRadius: "50%",
-                                                        backgroundColor: colors.accentLight,
-                                                        border: `1.5px solid ${colors.accent}`,
+                                                        backgroundColor: slideBulletBg,
+                                                        border: `1.5px solid ${slideBulletBorder}`,
                                                         marginTop: "6px",
                                                         fontSize: "0.65rem",
-                                                        color: colors.accent,
+                                                        color: slideBulletColor,
                                                         fontWeight: "bold",
                                                         flexShrink: 0
                                                     }}>✓</span>
@@ -978,7 +1082,7 @@ export default function PresentationPage() {
                                                         onChange={(val) => handleUpdateBullet(index, i, val)}
                                                         style={{
                                                             fontSize: "1.05rem",
-                                                            color: colors.text,
+                                                            color: slideTextColor,
                                                             backgroundColor: "transparent",
                                                             border: "1px solid transparent",
                                                             borderRadius: "4px",
@@ -1103,8 +1207,176 @@ export default function PresentationPage() {
                                         </div>
                                     )}
                                 </div>
+
+                                {/* Slide Customization Panel (Gamma style) */}
+                                {activeSlideIndex === index && (
+                                    <div className="no-print" style={{
+                                        marginTop: "32px",
+                                        paddingTop: "24px",
+                                        borderTop: `1px solid ${slideBorderColor}`,
+                                        display: "flex",
+                                        flexDirection: "column",
+                                        gap: "16px"
+                                    }}>
+                                        <div style={{ display: "flex", flexWrap: "wrap", gap: "24px", alignItems: "center" }}>
+                                            {/* Layout controls */}
+                                            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                                                <span style={{ fontSize: "0.75rem", fontWeight: 800, color: slideMutedColor, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                                                    Layout Position
+                                                </span>
+                                                <div style={{ display: "flex", gap: "6px" }}>
+                                                    {(["left", "right", "top", "background", "none"] as const).map((pos) => {
+                                                        const isSelected = slide.image?.position === pos || (pos === "none" && !slide.image);
+                                                        return (
+                                                            <button
+                                                                key={pos}
+                                                                onClick={() => {
+                                                                    if (pos === "none") {
+                                                                        handleUpdateSlideImage(index, undefined);
+                                                                    } else {
+                                                                        const currentImg = slide.image || {
+                                                                            url: "https://images.unsplash.com/photo-1454165804606-c3d57bc86b40?w=600",
+                                                                            keyword: "presentation",
+                                                                            width: 100,
+                                                                            position: "right"
+                                                                        };
+                                                                        handleUpdateSlideImage(index, {
+                                                                            ...currentImg,
+                                                                            position: pos
+                                                                        });
+                                                                    }
+                                                                }}
+                                                                style={{
+                                                                    backgroundColor: isSelected ? colors.accent : "transparent",
+                                                                    color: isSelected ? "white" : slideTextColor,
+                                                                    border: `1.5px solid ${isSelected ? colors.accent : slideBorderColor}`,
+                                                                    borderRadius: "8px",
+                                                                    padding: "6px 12px",
+                                                                    fontSize: "0.8rem",
+                                                                    fontWeight: "bold",
+                                                                    cursor: "pointer",
+                                                                    transition: "all 0.2s ease"
+                                                                }}
+                                                            >
+                                                                {pos === "none" ? "🚫 No Image" : pos === "background" ? "🖼️ Full Background" : `Layout ${pos}`}
+                                                            </button>
+                                                        );
+                                                    })}
+                                                </div>
+                                            </div>
+
+                                            {/* Background override presets */}
+                                            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                                                <span style={{ fontSize: "0.75rem", fontWeight: 800, color: slideMutedColor, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                                                    Background Styling
+                                                </span>
+                                                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                                    {/* Theme default */}
+                                                    <button
+                                                        onClick={() => handleUpdateSlideBackground(index, "", "theme")}
+                                                        style={{
+                                                            width: "28px",
+                                                            height: "28px",
+                                                            borderRadius: "50%",
+                                                            border: `2px solid ${(!slide.custom_bg || slide.custom_bg_type === "theme") ? colors.accent : slideBorderColor}`,
+                                                            background: colors.cardBg,
+                                                            cursor: "pointer",
+                                                            position: "relative",
+                                                            transition: "all 0.2s"
+                                                        }}
+                                                        title="Theme Default"
+                                                    >
+                                                        <span style={{ fontSize: "0.6rem", color: colors.text, position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</span>
+                                                    </button>
+
+                                                    {/* Presets mapping */}
+                                                    {BACKGROUND_PRESETS.map((preset) => {
+                                                        const isSelected = slide.custom_bg === preset.value && slide.custom_bg_type === preset.type;
+                                                        return (
+                                                            <button
+                                                                key={preset.name}
+                                                                onClick={() => handleUpdateSlideBackground(index, preset.value, preset.type)}
+                                                                style={{
+                                                                    width: "28px",
+                                                                    height: "28px",
+                                                                    borderRadius: "50%",
+                                                                    border: `2px solid ${isSelected ? colors.accent : slideBorderColor}`,
+                                                                    background: preset.value,
+                                                                    cursor: "pointer",
+                                                                    transition: "all 0.2s"
+                                                                }}
+                                                                title={preset.name}
+                                                            />
+                                                        );
+                                                    })}
+
+                                                    {/* Custom Color Picker */}
+                                                    <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                                                        <input
+                                                            type="color"
+                                                            value={slide.custom_bg_type === "solid" && slide.custom_bg?.startsWith("#") ? slide.custom_bg : "#ffffff"}
+                                                            onChange={(e) => handleUpdateSlideBackground(index, e.target.value, "solid")}
+                                                            style={{
+                                                                opacity: 0,
+                                                                position: "absolute",
+                                                                inset: 0,
+                                                                width: "28px",
+                                                                height: "28px",
+                                                                cursor: "pointer",
+                                                                zIndex: 2
+                                                            }}
+                                                            title="Custom Solid Color"
+                                                        />
+                                                        <div style={{
+                                                            width: "28px",
+                                                            height: "28px",
+                                                            borderRadius: "50%",
+                                                            border: `2px solid ${slide.custom_bg_type === "solid" && !BACKGROUND_PRESETS.some(p => p.value === slide.custom_bg) ? colors.accent : slideBorderColor}`,
+                                                            background: "linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet)",
+                                                            zIndex: 1,
+                                                            pointerEvents: "none"
+                                                        }} />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                )}
+
+                                {/* Drag Drop Image Overlay */}
+                                {draggedSlideIndex === index && (
+                                    <div style={{
+                                        position: "absolute",
+                                        inset: 0,
+                                        backgroundColor: "rgba(79, 70, 229, 0.2)",
+                                        backdropFilter: "blur(6px)",
+                                        border: `3px dashed ${colors.accent}`,
+                                        borderRadius: "24px",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        zIndex: 50,
+                                        pointerEvents: "none"
+                                    }}>
+                                        <div style={{
+                                            backgroundColor: colors.cardBg,
+                                            border: `1.5px solid ${colors.border}`,
+                                            padding: "20px 32px",
+                                            borderRadius: "16px",
+                                            boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1), 0 10px 10px -5px rgba(0,0,0,0.04)",
+                                            fontSize: "1.1rem",
+                                            fontWeight: 800,
+                                            color: colors.accent,
+                                            display: "flex",
+                                            alignItems: "center",
+                                            gap: "10px"
+                                        }}>
+                                            📥 Drop Image File Here to Set Slide Image
+                                        </div>
+                                    </div>
+                                )}
                             </div>
-                        ))}
+                        )})}
 
                         <button
                             className="no-print"
@@ -1157,7 +1429,7 @@ export default function PresentationPage() {
                     }}>
                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                             <h3 style={{ fontSize: "1.3rem", fontWeight: 800, color: colors.text, margin: 0 }}>
-                                🖼️ Search Presentation Images
+                                🖼️ Choose Slide Image
                             </h3>
                             <button
                                 onClick={() => {
@@ -1176,91 +1448,198 @@ export default function PresentationPage() {
                             </button>
                         </div>
 
-                        <div style={{ display: "flex", gap: "10px" }}>
-                            <input
-                                type="text"
-                                value={searchQuery}
-                                onChange={(e) => setSearchQuery(e.target.value)}
-                                onKeyDown={(e) => {
-                                    if (e.key === "Enter") handleSearchPhotos();
-                                }}
-                                placeholder="Type keywords e.g. food safety, tech..."
-                                style={{
-                                    flexGrow: 1,
-                                    padding: "10px 14px",
-                                    borderRadius: "10px",
-                                    border: `1px solid ${colors.border}`,
-                                    backgroundColor: colors.bg,
-                                    color: colors.text,
-                                    fontSize: "0.95rem",
-                                    outline: "none"
-                                }}
-                            />
+                        {/* Tab Headers */}
+                        <div style={{
+                            display: "flex",
+                            borderBottom: `1px solid ${colors.border}`,
+                            gap: "8px",
+                            paddingBottom: "4px"
+                        }}>
                             <button
-                                onClick={handleSearchPhotos}
+                                onClick={() => setModalTab("search")}
                                 style={{
-                                    backgroundColor: colors.accent,
-                                    color: "white",
+                                    padding: "6px 12px",
+                                    fontSize: "0.85rem",
+                                    fontWeight: 700,
+                                    color: modalTab === "search" ? colors.accent : colors.muted,
+                                    borderBottom: `3px solid ${modalTab === "search" ? colors.accent : "transparent"}`,
+                                    background: "none",
                                     border: "none",
-                                    borderRadius: "10px",
-                                    padding: "10px 20px",
-                                    fontSize: "0.95rem",
-                                    fontWeight: "bold",
-                                    cursor: "pointer"
+                                    cursor: "pointer",
+                                    transition: "all 0.2s"
                                 }}
                             >
-                                Search
+                                🔍 Web Search (Unsplash)
+                            </button>
+                            <button
+                                onClick={() => setModalTab("upload")}
+                                style={{
+                                    padding: "6px 12px",
+                                    fontSize: "0.85rem",
+                                    fontWeight: 700,
+                                    color: modalTab === "upload" ? colors.accent : colors.muted,
+                                    borderBottom: `3px solid ${modalTab === "upload" ? colors.accent : "transparent"}`,
+                                    background: "none",
+                                    border: "none",
+                                    cursor: "pointer",
+                                    transition: "all 0.2s"
+                                }}
+                            >
+                                📤 Upload Local Image
                             </button>
                         </div>
 
-                        <div style={{
-                            maxHeight: "320px",
-                            overflowY: "auto",
-                            display: "grid",
-                            gridTemplateColumns: "repeat(3, 1fr)",
-                            gap: "12px",
-                            padding: "4px"
-                        }}>
-                            {isSearching ? (
-                                <div style={{ gridColumn: "span 3", textAlign: "center", padding: "40px 0", color: colors.muted }}>
-                                    Searching high-quality photos...
-                                </div>
-                            ) : searchResults.length === 0 ? (
-                                <div style={{ gridColumn: "span 3", textAlign: "center", padding: "40px 0", color: colors.muted }}>
-                                    No images found. Try searching another keyword.
-                                </div>
-                            ) : (
-                                searchResults.map((photo) => (
-                                    <div
-                                        key={photo.id}
-                                        onClick={() => selectPhoto(photo.url)}
-                                        style={{
-                                            borderRadius: "12px",
-                                            overflow: "hidden",
-                                            height: "90px",
-                                            cursor: "pointer",
-                                            border: `2px solid transparent`,
-                                            transition: "all 0.2s ease",
-                                            position: "relative"
+                        {modalTab === "search" ? (
+                            <>
+                                <div style={{ display: "flex", gap: "10px" }}>
+                                    <input
+                                        type="text"
+                                        value={searchQuery}
+                                        onChange={(e) => setSearchQuery(e.target.value)}
+                                        onKeyDown={(e) => {
+                                            if (e.key === "Enter") handleSearchPhotos();
                                         }}
-                                        className="search-photo-item"
+                                        placeholder="Type keywords e.g. food safety, tech..."
+                                        style={{
+                                            flexGrow: 1,
+                                            padding: "10px 14px",
+                                            borderRadius: "10px",
+                                            border: `1px solid ${colors.border}`,
+                                            backgroundColor: colors.bg,
+                                            color: colors.text,
+                                            fontSize: "0.95rem",
+                                            outline: "none"
+                                        }}
+                                    />
+                                    <button
+                                        onClick={handleSearchPhotos}
+                                        style={{
+                                            backgroundColor: colors.accent,
+                                            color: "white",
+                                            border: "none",
+                                            borderRadius: "10px",
+                                            padding: "10px 20px",
+                                            fontSize: "0.95rem",
+                                            fontWeight: "bold",
+                                            cursor: "pointer"
+                                        }}
                                     >
-                                        <img
-                                            src={photo.thumb || photo.url}
-                                            alt={photo.description}
-                                            style={{ width: "100%", height: "100%", objectFit: "cover" }}
-                                        />
-                                        <div style={{
-                                            position: "absolute",
-                                            inset: 0,
-                                            backgroundColor: "rgba(0,0,0,0.2)",
-                                            opacity: 0,
-                                            transition: "opacity 0.2s"
-                                        }} className="photo-item-overlay" />
-                                    </div>
-                                ))
-                            )}
-                        </div>
+                                        Search
+                                    </button>
+                                </div>
+
+                                <div style={{
+                                    maxHeight: "320px",
+                                    overflowY: "auto",
+                                    display: "grid",
+                                    gridTemplateColumns: "repeat(3, 1fr)",
+                                    gap: "12px",
+                                    padding: "4px"
+                                }}>
+                                    {isSearching ? (
+                                        <div style={{ gridColumn: "span 3", textAlign: "center", padding: "40px 0", color: colors.muted }}>
+                                            Searching high-quality photos...
+                                        </div>
+                                    ) : searchResults.length === 0 ? (
+                                        <div style={{ gridColumn: "span 3", textAlign: "center", padding: "40px 0", color: colors.muted }}>
+                                            No images found. Try searching another keyword.
+                                        </div>
+                                    ) : (
+                                        searchResults.map((photo) => (
+                                            <div
+                                                key={photo.id}
+                                                onClick={() => selectPhoto(photo.url)}
+                                                style={{
+                                                    borderRadius: "12px",
+                                                    overflow: "hidden",
+                                                    height: "90px",
+                                                    cursor: "pointer",
+                                                    border: `2px solid transparent`,
+                                                    transition: "all 0.2s ease",
+                                                    position: "relative"
+                                                }}
+                                                className="search-photo-item"
+                                            >
+                                                <img
+                                                    src={photo.thumb || photo.url}
+                                                    alt={photo.description}
+                                                    style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                                                />
+                                                <div style={{
+                                                    position: "absolute",
+                                                    inset: 0,
+                                                    backgroundColor: "rgba(0,0,0,0.2)",
+                                                    opacity: 0,
+                                                    transition: "opacity 0.2s"
+                                                }} className="photo-item-overlay" />
+                                            </div>
+                                        ))
+                                    )}
+                                </div>
+                            </>
+                        ) : (
+                            <div
+                                onDragOver={(e) => {
+                                    e.preventDefault();
+                                    setModalDragOver(true);
+                                }}
+                                onDragLeave={() => {
+                                    setModalDragOver(false);
+                                }}
+                                onDrop={(e) => {
+                                    e.preventDefault();
+                                    setModalDragOver(false);
+                                    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                                        if (activeSearchSlideIndex !== null) {
+                                            handleImageFileLoad(e.dataTransfer.files[0], activeSearchSlideIndex);
+                                            setSearchModalOpen(false);
+                                            setActiveSearchSlideIndex(null);
+                                        }
+                                    }
+                                }}
+                                style={{
+                                    border: `2px dashed ${modalDragOver ? colors.accent : colors.border}`,
+                                    backgroundColor: modalDragOver ? `${colors.accent}10` : "transparent",
+                                    borderRadius: "16px",
+                                    padding: "48px 24px",
+                                    textAlign: "center",
+                                    cursor: "pointer",
+                                    transition: "all 0.2s ease",
+                                    display: "flex",
+                                    flexDirection: "column",
+                                    alignItems: "center",
+                                    justifyContent: "center",
+                                    gap: "12px"
+                                }}
+                                onClick={() => {
+                                    const fileInput = document.getElementById("modal-file-upload-input") as HTMLInputElement;
+                                    fileInput?.click();
+                                }}
+                            >
+                                <input
+                                    id="modal-file-upload-input"
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => {
+                                        if (e.target.files && e.target.files[0]) {
+                                            if (activeSearchSlideIndex !== null) {
+                                                handleImageFileLoad(e.target.files[0], activeSearchSlideIndex);
+                                                setSearchModalOpen(false);
+                                                setActiveSearchSlideIndex(null);
+                                            }
+                                        }
+                                    }}
+                                    style={{ display: "none" }}
+                                />
+                                <span style={{ fontSize: "2.5rem" }}>📤</span>
+                                <div style={{ fontSize: "1rem", fontWeight: "bold", color: colors.text }}>
+                                    Drag & drop an image here
+                                </div>
+                                <div style={{ fontSize: "0.85rem", color: colors.muted }}>
+                                    or click to browse local files
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             )}

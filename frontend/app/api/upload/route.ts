@@ -38,7 +38,7 @@ export async function POST(request: Request) {
         // Guarantee cleanup of the temp file
         try {
           unlinkSync(tempPath);
-        } catch {}
+        } catch { }
       }
     }
 

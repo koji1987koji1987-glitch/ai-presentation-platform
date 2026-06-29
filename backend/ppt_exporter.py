@@ -13,6 +13,36 @@ def apply_text_styling(paragraph, font_name="Arial", size_pt=18, color_rgb=(51, 
     paragraph.font.bold = bold
     paragraph.font.italic = italic
 
+def hex_to_rgb(hex_str):
+    hex_str = hex_str.lstrip('#')
+    if len(hex_str) == 3:
+        hex_str = ''.join([c*2 for c in hex_str])
+    try:
+        return tuple(int(hex_str[i:i+2], 16) for i in (0, 2, 4))
+    except Exception:
+        return (255, 255, 255)
+
+def get_background_rgb(custom_bg, custom_bg_type, default_rgb):
+    if not custom_bg or custom_bg_type == "theme":
+        return default_rgb
+    
+    # Check if custom_bg is a gradient (find the first Hex color)
+    import re
+    hex_colors = re.findall(r'#([A-Fa-f0-9]{6}|[A-Fa-f0-9]{3})\b', custom_bg)
+    if hex_colors:
+        return hex_to_rgb(hex_colors[0])
+            
+    # Check for direct hex color
+    if custom_bg.startswith('#'):
+        return hex_to_rgb(custom_bg)
+            
+    return default_rgb
+
+def is_dark_color(rgb_tuple):
+    r, g, b = rgb_tuple
+    luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255
+    return luminance < 0.5
+
 def add_image_from_url(slide, url, left, top, width, height):
     if not url:
         return
@@ -20,22 +50,35 @@ def add_image_from_url(slide, url, left, top, width, height):
     import tempfile
     import os
     import ssl
+    import base64
+    import re
     
     try:
-        # Bypassing SSL verification on macOS
-        ssl_context = ssl._create_unverified_context()
-        # Add User-Agent to prevent 403 blocks
-        req = urllib.request.Request(
-            url,
-            headers={
-                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
-            }
-        )
-        # Download image to a temp file
-        with urllib.request.urlopen(req, context=ssl_context, timeout=15) as response:
-            with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as temp_file:
-                temp_file.write(response.read())
+        if url.startswith("data:image/"):
+            # Base64 Data URL decoding
+            header, base64_data = url.split(",", 1)
+            ext_match = re.search(r"data:image/(\w+);base64", header)
+            suffix = "." + ext_match.group(1) if ext_match else ".jpg"
+            image_bytes = base64.b64decode(base64_data)
+            with tempfile.NamedTemporaryFile(delete=False, suffix=suffix) as temp_file:
+                temp_file.write(image_bytes)
                 temp_file_path = temp_file.name
+        else:
+            # Standard HTTP URL download
+            # Bypassing SSL verification on macOS
+            ssl_context = ssl._create_unverified_context()
+            # Add User-Agent to prevent 403 blocks
+            req = urllib.request.Request(
+                url,
+                headers={
+                    'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+                }
+            )
+            # Download image to a temp file
+            with urllib.request.urlopen(req, context=ssl_context, timeout=15) as response:
+                with tempfile.NamedTemporaryFile(delete=False, suffix=".jpg") as temp_file:
+                    temp_file.write(response.read())
+                    temp_file_path = temp_file.name
         
         # Add to slide
         slide.shapes.add_picture(temp_file_path, left, top, width=width, height=height)
@@ -43,7 +86,7 @@ def add_image_from_url(slide, url, left, top, width, height):
         # Clean up temp file
         os.unlink(temp_file_path)
     except Exception as e:
-        print(f"Error adding image from {url}: {e}", file=sys.stderr)
+        print(f"Error adding image: {e}", file=sys.stderr)
 
 THEME_PALETTES = {
     "slate": {
@@ -102,14 +145,18 @@ THEME_PALETTES = {
     }
 }
 
-def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate", x_shift=Inches(0)):
+def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate", x_shift=Inches(0), custom_palette=None):
     text = (suggestion or "").lower()
     
     # Helper to truncate text inside shapes
     def trunc(s, max_len=30):
         return s[:max_len] + "..." if len(s) > max_len else s
 
-    palette = THEME_PALETTES.get(theme_name, THEME_PALETTES["slate"])
+    if custom_palette:
+        palette = custom_palette
+    else:
+        palette = THEME_PALETTES.get(theme_name, THEME_PALETTES["slate"])
+        
     accent_rgb = palette["accent"]
     accent_light_rgb = palette["accentLight"]
     text_dark_rgb = palette["text"]
@@ -739,34 +786,90 @@ def main():
         title_text = slide_data.get("title", f"Slide {idx + 1}")
         content_points = slide_data.get("content", [])
         visual_suggestion = slide_data.get("visual_suggestion", "")
+        custom_bg = slide_data.get("custom_bg")
+        custom_bg_type = slide_data.get("custom_bg_type", "theme")
+
+        # Resolve background and dynamic colors
+        slide_bg_rgb = get_background_rgb(custom_bg, custom_bg_type, palette["bg"])
+        
+        if is_dark_color(slide_bg_rgb):
+            slide_text_rgb = (248, 250, 252)
+            slide_muted_rgb = (203, 213, 225)
+            slide_accent_rgb = (129, 140, 248)
+            slide_accent_light_rgb = (49, 46, 129)
+            slide_border_rgb = (51, 65, 85)
+        else:
+            if is_dark_color(palette["bg"]):
+                slide_text_rgb = (15, 23, 42)
+                slide_muted_rgb = (100, 116, 139)
+                slide_accent_rgb = (79, 70, 229)
+                slide_accent_light_rgb = (239, 246, 255)
+                slide_border_rgb = (226, 232, 240)
+            else:
+                slide_text_rgb = palette["text"]
+                slide_muted_rgb = palette["muted"]
+                slide_accent_rgb = palette["accent"]
+                slide_accent_light_rgb = palette["accentLight"]
+                slide_border_rgb = palette["border"]
+
+        slide_colors = {
+            "bg": slide_bg_rgb,
+            "cardBg": (30, 41, 59) if is_dark_color(slide_bg_rgb) else (255, 255, 255),
+            "text": slide_text_rgb,
+            "muted": slide_muted_rgb,
+            "accent": slide_accent_rgb,
+            "accentLight": slide_accent_light_rgb,
+            "border": slide_border_rgb
+        }
+
+        # Apply slide background color
+        background = slide.background
+        fill = background.fill
+        fill.solid()
+        fill.fore_color.rgb = RGBColor(*slide_bg_rgb)
+
+        # Extract image URL and layout position from slide data
+        image_data = slide_data.get("image")
+        image_url = None
+        image_pos = "none"
+        if image_data and isinstance(image_data, dict):
+            image_url = image_data.get("url")
+            image_pos = image_data.get("position", "none")
+            if not image_url:
+                image_pos = "none"
+
+        # 0. Draw Background image first if image_pos == "background"
+        if image_pos == "background":
+            add_image_from_url(slide, image_url, Inches(0), Inches(0), Inches(13.333), Inches(7.5))
+            # Semi-transparent dark overlay (40% transparency)
+            overlay = slide.shapes.add_shape(MSO_SHAPE.RECTANGLE, Inches(0), Inches(0), Inches(13.333), Inches(7.5))
+            overlay.fill.solid()
+            overlay.fill.fore_color.rgb = RGBColor(15, 23, 42)
+            try:
+                overlay.fill.transparency = 0.4
+            except Exception:
+                pass
+            
+            # Since the background cover is dark, override colors to dark mode styles for text overlay
+            slide_colors["text"] = (248, 250, 252)
+            slide_colors["muted"] = (203, 213, 225)
+            slide_colors["cardBg"] = (30, 41, 59)
+            slide_colors["border"] = (51, 65, 85)
 
         if idx == 0:
-            # Title Slide
-            background = slide.background
-            fill = background.fill
-            fill.solid()
-            fill.fore_color.rgb = RGBColor(*palette["bg"])
-            
-            # Extract image URL and layout position from slide data
-            image_data = slide_data.get("image")
-            image_url = None
-            image_pos = "none"
-            if image_data and isinstance(image_data, dict):
-                image_url = image_data.get("url")
-                image_pos = image_data.get("position", "none")
-                if not image_url:
-                    image_pos = "none"
-
-            # Separate Title and Subtitle text boxes to prevent overlaps and overflows
+            # Title Slide (Widescreen Centered or Split layout)
             title_size = 36
             subtitle_size = 14
             
-            if image_pos != "none":
-                if image_pos == "left":
+            # If position is background, treat it like text-only for textbox placements
+            pos_calc = "none" if image_pos == "background" else image_pos
+            
+            if pos_calc != "none":
+                if pos_calc == "left":
                     add_image_from_url(slide, image_url, Inches(0.8), Inches(1.5), Inches(4.7), Inches(5.1))
                     txBox_title = slide.shapes.add_textbox(Inches(6.0), Inches(1.6), Inches(6.5), Inches(2.5))
                     txBox_sub = slide.shapes.add_textbox(Inches(6.0), Inches(4.4), Inches(6.5), Inches(2.2))
-                elif image_pos == "top":
+                elif pos_calc == "top":
                     add_image_from_url(slide, image_url, Inches(0.8), Inches(1.5), Inches(11.733), Inches(2.2))
                     txBox_title = slide.shapes.add_textbox(Inches(1.0), Inches(4.0), Inches(11.333), Inches(1.4))
                     txBox_sub = slide.shapes.add_textbox(Inches(1.0), Inches(5.6), Inches(11.333), Inches(1.2))
@@ -787,7 +890,7 @@ def main():
             tf_title.word_wrap = True
             p_title = tf_title.paragraphs[0]
             p_title.text = title_text
-            apply_text_styling(p_title, font_name="Georgia", size_pt=title_size, color_rgb=palette["text"], bold=True)
+            apply_text_styling(p_title, font_name="Georgia", size_pt=title_size, color_rgb=slide_colors["text"], bold=True)
             
             # Render Subtitle (Content points)
             if content_points:
@@ -795,51 +898,36 @@ def main():
                 tf_sub.word_wrap = True
                 p_sub = tf_sub.paragraphs[0]
                 p_sub.text = " • ".join(content_points)
-                apply_text_styling(p_sub, font_name="Arial", size_pt=subtitle_size, color_rgb=palette["muted"])
+                apply_text_styling(p_sub, font_name="Arial", size_pt=subtitle_size, color_rgb=slide_colors["muted"])
         else:
-            # Content Slide
-            background = slide.background
-            fill = background.fill
-            fill.solid()
-            fill.fore_color.rgb = RGBColor(*palette["bg"])
-            
-            # Slide Header Title (Font size reduced from 32 to 24 to prevent wraps and title overlaps)
+            # Content Slide Header Title
             title_box = slide.shapes.add_textbox(Inches(0.8), Inches(0.5), Inches(11.7), Inches(1.0))
             tf_title = title_box.text_frame
             tf_title.word_wrap = True
             p_title = tf_title.paragraphs[0]
             p_title.text = title_text
-            apply_text_styling(p_title, font_name="Georgia", size_pt=24, color_rgb=palette["text"], bold=True)
+            apply_text_styling(p_title, font_name="Georgia", size_pt=24, color_rgb=slide_colors["text"], bold=True)
             
-            # Extract image URL and layout position from slide data
-            image_data = slide_data.get("image")
-            image_url = None
-            image_pos = "none"
-            if image_data and isinstance(image_data, dict):
-                image_url = image_data.get("url")
-                image_pos = image_data.get("position", "none")
-                if not image_url:
-                    image_pos = "none"
-
             # Determine alternating columns for PPT Designer layout
             is_even_slide = (idx % 2 == 0)
             content_left = Inches(6.0) if (is_even_slide and visual_suggestion) else Inches(0.8)
             
+            # Determine layout check: background cover behaves like "none" image position for placement of side items
+            pos_calc = "none" if image_pos == "background" else image_pos
+
             # 1. Slide has BOTH Diagram and Image
-            if visual_suggestion and image_pos != "none":
+            if visual_suggestion and pos_calc != "none":
                 # Stacking: Text is at top-half of text column, Image is at bottom-half of text column
-                # Shifted content top to 1.8, and restricted height to 2.7 to avoid image overlaps
                 content_box = slide.shapes.add_textbox(content_left, Inches(1.8), Inches(6.5), Inches(2.7))
                 tf_content = content_box.text_frame
                 tf_content.word_wrap = True
                 for p_idx, point in enumerate(content_points):
                     p = tf_content.add_paragraph() if p_idx > 0 else tf_content.paragraphs[0]
                     p.text = f"•  {point}"
-                    # Reduced bullet size to 12pt and spacing to Pt(3) to prevent overflow
-                    apply_text_styling(p, font_name="Arial", size_pt=12, color_rgb=palette["text"])
+                    apply_text_styling(p, font_name="Arial", size_pt=12, color_rgb=slide_colors["text"])
                     p.space_after = Pt(3)
                 
-                # Image placed further down at top=4.7 with height=2.0 to avoid overlap
+                # Image placed further down at top=4.7 with height=2.0
                 add_image_from_url(slide, image_url, content_left, Inches(4.7), Inches(6.5), Inches(2.0))
                 
                 # Diagram card shifted to top=1.8 with height=4.9
@@ -847,11 +935,11 @@ def main():
                 card_left = Inches(7.8) + x_shift
                 card = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, card_left, Inches(1.8), Inches(4.7), Inches(4.9))
                 card.fill.solid()
-                card.fill.fore_color.rgb = RGBColor(*palette["cardBg"])
-                card.line.color.rgb = RGBColor(*palette["border"])
+                card.fill.fore_color.rgb = RGBColor(*slide_colors["cardBg"])
+                card.line.color.rgb = RGBColor(*slide_colors["border"])
                 card.line.width = Pt(1.5)
                 
-                draw_diagram(slide, visual_suggestion, content_points, slide_data.get("diagram"), theme_name, x_shift)
+                draw_diagram(slide, visual_suggestion, content_points, slide_data.get("diagram"), theme_name, x_shift, custom_palette=slide_colors)
                 
             # 2. Slide has Diagram but NO Image
             elif visual_suggestion:
@@ -861,22 +949,22 @@ def main():
                 for p_idx, point in enumerate(content_points):
                     p = tf_content.add_paragraph() if p_idx > 0 else tf_content.paragraphs[0]
                     p.text = f"•  {point}"
-                    apply_text_styling(p, font_name="Arial", size_pt=16, color_rgb=palette["text"])
+                    apply_text_styling(p, font_name="Arial", size_pt=16, color_rgb=slide_colors["text"])
                     p.space_after = Pt(14)
                 
                 x_shift = -Inches(7.0) if is_even_slide else Inches(0)
                 card_left = Inches(7.8) + x_shift
                 card = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, card_left, Inches(1.8), Inches(4.7), Inches(4.9))
                 card.fill.solid()
-                card.fill.fore_color.rgb = RGBColor(*palette["cardBg"])
-                card.line.color.rgb = RGBColor(*palette["border"])
+                card.fill.fore_color.rgb = RGBColor(*slide_colors["cardBg"])
+                card.line.color.rgb = RGBColor(*slide_colors["border"])
                 card.line.width = Pt(1.5)
                 
-                draw_diagram(slide, visual_suggestion, content_points, slide_data.get("diagram"), theme_name, x_shift)
+                draw_diagram(slide, visual_suggestion, content_points, slide_data.get("diagram"), theme_name, x_shift, custom_palette=slide_colors)
                 
             # 3. Slide has NO Diagram but HAS Image
-            elif image_pos != "none":
-                if image_pos == "left":
+            elif pos_calc != "none":
+                if pos_calc == "left":
                     # Render image in left column, text in right column
                     add_image_from_url(slide, image_url, Inches(0.8), Inches(1.8), Inches(4.7), Inches(4.9))
                     
@@ -886,9 +974,9 @@ def main():
                     for p_idx, point in enumerate(content_points):
                         p = tf_content.add_paragraph() if p_idx > 0 else tf_content.paragraphs[0]
                         p.text = f"•  {point}"
-                        apply_text_styling(p, font_name="Arial", size_pt=16, color_rgb=palette["text"])
+                        apply_text_styling(p, font_name="Arial", size_pt=16, color_rgb=slide_colors["text"])
                         p.space_after = Pt(14)
-                elif image_pos == "top":
+                elif pos_calc == "top":
                     # Render image on top, text below
                     add_image_from_url(slide, image_url, Inches(0.8), Inches(1.8), Inches(11.733), Inches(2.2))
                     
@@ -898,9 +986,9 @@ def main():
                     for p_idx, point in enumerate(content_points):
                         p = tf_content.add_paragraph() if p_idx > 0 else tf_content.paragraphs[0]
                         p.text = f"•  {point}"
-                        apply_text_styling(p, font_name="Arial", size_pt=16, color_rgb=palette["text"])
+                        apply_text_styling(p, font_name="Arial", size_pt=16, color_rgb=slide_colors["text"])
                         p.space_after = Pt(14)
-                else:  # default or "right"
+                else:  # "right"
                     # Render text in left column, image in right column
                     content_box = slide.shapes.add_textbox(Inches(0.8), Inches(1.8), Inches(6.5), Inches(4.9))
                     tf_content = content_box.text_frame
@@ -908,7 +996,7 @@ def main():
                     for p_idx, point in enumerate(content_points):
                         p = tf_content.add_paragraph() if p_idx > 0 else tf_content.paragraphs[0]
                         p.text = f"•  {point}"
-                        apply_text_styling(p, font_name="Arial", size_pt=16, color_rgb=palette["text"])
+                        apply_text_styling(p, font_name="Arial", size_pt=16, color_rgb=slide_colors["text"])
                         p.space_after = Pt(14)
                     
                     add_image_from_url(slide, image_url, Inches(7.8), Inches(1.8), Inches(4.7), Inches(4.9))
@@ -922,7 +1010,7 @@ def main():
                 for p_idx, point in enumerate(content_points):
                     p = tf_content.add_paragraph() if p_idx > 0 else tf_content.paragraphs[0]
                     p.text = f"•  {point}"
-                    apply_text_styling(p, font_name="Arial", size_pt=18, color_rgb=palette["text"])
+                    apply_text_styling(p, font_name="Arial", size_pt=18, color_rgb=slide_colors["text"])
                     p.space_after = Pt(16)
 
     prs.save(output_path)
