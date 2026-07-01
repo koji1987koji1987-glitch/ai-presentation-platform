@@ -304,7 +304,7 @@ export default function Home() {
                             }}>
                                 <span style={{ fontSize: "1.2rem" }}>🎯</span>
                                 <div style={{ fontSize: "0.7rem", color: "#94a3b8" }}>
-                                    Prompt: <span style={{ color: "#a5b4fc" }}>"Focus on solar cell timelines"</span>
+                                    Prompt: <span style={{ color: "#a5b4fc" }}>&ldquo;Focus on solar cell timelines&rdquo;</span>
                                 </div>
                             </div>
                         </div>

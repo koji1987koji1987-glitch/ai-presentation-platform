@@ -1,6 +1,7 @@
 import { writeFileSync, readFileSync, unlinkSync } from "fs";
 import { join } from "path";
 import { execFileSync } from "child_process";
+import { getPythonCommand } from "../pythonHelper";
 
 export async function POST(request: Request) {
   try {
@@ -25,7 +26,7 @@ export async function POST(request: Request) {
 
     try {
       // Execute the python PPTX exporter
-      execFileSync("python3", [
+      execFileSync(getPythonCommand(), [
         join(process.cwd(), "..", "backend", "ppt_exporter.py"),
         tempJsonPath,
         tempPptxPath,
@@ -45,8 +46,9 @@ export async function POST(request: Request) {
           "Content-Disposition": 'attachment; filename="presentation.pptx"',
         },
       });
-    } catch (execError: any) {
-      console.error("PPTX Generation process failed:", execError);
+    } catch (execError) {
+      const err = execError as { message: string; stdout?: Buffer; stderr?: Buffer };
+      console.error("PPTX Generation process failed:", err);
       
       // Clean up if files were created
       try {
@@ -59,17 +61,18 @@ export async function POST(request: Request) {
       return Response.json(
         {
           error: "PowerPoint generation failed.",
-          details: execError.message,
-          stdout: execError.stdout?.toString(),
-          stderr: execError.stderr?.toString(),
+          details: err.message,
+          stdout: err.stdout?.toString(),
+          stderr: err.stderr?.toString(),
         },
         { status: 500 }
       );
     }
-  } catch (error: any) {
-    console.error("Export request failed:", error);
+  } catch (error) {
+    const err = error as Error;
+    console.error("Export request failed:", err);
     return Response.json(
-      { error: "Failed to process request", details: error.message },
+      { error: "Failed to process request", details: err.message },
       { status: 500 }
     );
   }

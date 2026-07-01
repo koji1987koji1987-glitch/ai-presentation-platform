@@ -54,9 +54,10 @@ export default function UploadPage() {
                 localStorage.setItem("slides", JSON.stringify(responseData));
             }
             router.push("/presentation");
-        } catch (error: any) {
-            console.error("Generation failed:", error);
-            setErrorMsg(error.message || "Something went wrong during generation.");
+        } catch (error) {
+            const err = error as Error;
+            console.error("Generation failed:", err);
+            setErrorMsg(err.message || "Something went wrong during generation.");
         } finally {
             setIsGenerating(false);
         }

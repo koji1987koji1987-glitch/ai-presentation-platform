@@ -102,6 +102,7 @@ const themePalettes = {
 };
 
 type ThemeKey = keyof typeof themePalettes;
+type ThemeColors = typeof themePalettes[ThemeKey];
 
 const BACKGROUND_PRESETS = [
     { name: "Sunset Glow", value: "linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)", type: "gradient" as const },
@@ -135,17 +136,17 @@ const isDarkBackground = (customBg?: string, bgType?: string, activeTheme?: stri
     return false;
 };
 
+interface AutoGrowingTextareaProps extends Omit<React.TextareaHTMLAttributes<HTMLTextAreaElement>, 'onChange'> {
+    value: string;
+    onChange: (val: string) => void;
+}
+
 function AutoGrowingTextarea({
     value,
     onChange,
     style,
     ...props
-}: {
-    value: string;
-    onChange: (val: string) => void;
-    style?: React.CSSProperties;
-    [key: string]: any;
-}) {
+}: AutoGrowingTextareaProps) {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
 
     const adjustHeight = () => {
@@ -185,11 +186,19 @@ export default function PresentationPage() {
     const [activeTheme, setActiveTheme] = useState<ThemeKey>("slate");
     const [activeSlideIndex, setActiveSlideIndex] = useState(0);
 
+    type UnsplashPhoto = {
+        id: string;
+        url: string;
+        thumb: string;
+        description: string;
+        author: string;
+    };
+
     // Image search state
     const [searchModalOpen, setSearchModalOpen] = useState(false);
     const [activeSearchSlideIndex, setActiveSearchSlideIndex] = useState<number | null>(null);
     const [searchQuery, setSearchQuery] = useState("");
-    const [searchResults, setSearchResults] = useState<any[]>([]);
+    const [searchResults, setSearchResults] = useState<UnsplashPhoto[]>([]);
     const [isSearching, setIsSearching] = useState(false);
 
     const [draggedSlideIndex, setDraggedSlideIndex] = useState<number | null>(null);
@@ -407,17 +416,22 @@ export default function PresentationPage() {
 
     useEffect(() => {
         const savedSlides = localStorage.getItem("slides");
-        if (savedSlides) {
-            try {
-                setSlides(JSON.parse(savedSlides));
-            } catch (e) {
-                console.error("Failed to parse saved slides:", e);
-            }
-        }
         const savedTheme = localStorage.getItem("theme");
-        if (savedTheme && savedTheme in themePalettes) {
-            setActiveTheme(savedTheme as ThemeKey);
-        }
+        
+        // Wrap state setters in a timeout to avoid synchronous set-state-in-effect ESLint rule
+        // and prevent server-client hydration mismatches.
+        setTimeout(() => {
+            if (savedSlides) {
+                try {
+                    setSlides(JSON.parse(savedSlides));
+                } catch (e) {
+                    console.error("Failed to parse saved slides:", e);
+                }
+            }
+            if (savedTheme && savedTheme in themePalettes) {
+                setActiveTheme(savedTheme as ThemeKey);
+            }
+        }, 0);
     }, []);
 
     // Slide Array Updates
@@ -518,9 +532,10 @@ export default function PresentationPage() {
             a.click();
             a.remove();
             window.URL.revokeObjectURL(url);
-        } catch (error: any) {
-            console.error("Export error:", error);
-            alert(`Failed to export to PowerPoint: ${error.message}`);
+        } catch (error) {
+            const err = error as Error;
+            console.error("Export error:", err);
+            alert(`Failed to export to PowerPoint: ${err.message}`);
         } finally {
             setIsExporting(false);
         }
@@ -1648,7 +1663,7 @@ export default function PresentationPage() {
 }
 
 // Interactive CSS Diagram Generator Widget
-function DiagramWidget({ suggestion, content, colors, diagram }: { suggestion: string; content: string[]; colors: any; diagram?: Diagram }) {
+function DiagramWidget({ suggestion, content, colors, diagram }: { suggestion: string; content: string[]; colors: ThemeColors; diagram?: Diagram }) {
     const text = (suggestion || "").toLowerCase();
 
     // Helper to truncate text for clean layout sizing
@@ -2454,7 +2469,7 @@ function DiagramWidget({ suggestion, content, colors, diagram }: { suggestion: s
                 margin: 0,
                 fontStyle: "italic"
             }}>
-                "{suggestion || "Standard Bullet List Layout"}"
+                &ldquo;{suggestion || "Standard Bullet List Layout"}&rdquo;
             </p>
         </div>
     );

@@ -1,6 +1,7 @@
-import { writeFileSync, readFileSync, unlinkSync } from "fs";
+import { writeFileSync, unlinkSync } from "fs";
 import { join } from "path";
 import { execFileSync } from "child_process";
+import { getPythonCommand } from "../pythonHelper";
 
 export async function POST(request: Request) {
   try {
@@ -9,6 +10,8 @@ export async function POST(request: Request) {
     const prompt = formData.get("prompt") as string | null;
 
     let text = "";
+
+    const pythonCmd = getPythonCommand();
 
     if (file && file.size > 0) {
       const bytes = await file.arrayBuffer();
@@ -24,12 +27,12 @@ export async function POST(request: Request) {
 
       try {
         if (isDocx) {
-          text = execFileSync("python3", [
+          text = execFileSync(pythonCmd, [
             join(process.cwd(), "..", "backend", "docx_reader.py"),
             tempPath,
           ]).toString();
         } else {
-          text = execFileSync("python3", [
+          text = execFileSync(pythonCmd, [
             join(process.cwd(), "..", "backend", "pdf_reader.py"),
             tempPath,
           ]).toString();
@@ -57,7 +60,7 @@ export async function POST(request: Request) {
     });
 
     // Generate slides from payload
-    const slidesOutput = execFileSync("python3", [
+    const slidesOutput = execFileSync(pythonCmd, [
       join(process.cwd(), "..", "backend", "slide_generator.py"),
       payload,
     ]).toString();
@@ -91,10 +94,11 @@ export async function POST(request: Request) {
     }
 
     return Response.json(data);
-  } catch (error: any) {
-    console.error("Upload handler failed:", error);
+  } catch (error) {
+    const err = error as Error;
+    console.error("Upload handler failed:", err);
     return Response.json(
-      { error: "Failed to generate presentation", details: error.message },
+      { error: "Failed to generate presentation", details: err.message },
       { status: 500 }
     );
   }
