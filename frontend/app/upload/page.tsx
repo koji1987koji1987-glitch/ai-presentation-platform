@@ -144,7 +144,7 @@ export default function UploadPage() {
                     }}>
                         <input
                             type="file"
-                            accept=".pdf,.docx"
+                            accept=".pdf,.docx,.txt,.md"
                             onChange={(event) => {
                                 const selectedFile = event.target.files?.[0];
                                 if (selectedFile) {
@@ -191,7 +191,7 @@ export default function UploadPage() {
                                         ×
                                     </button>
                                 </span>
-                            ) : "Click to select PDF or DOCX"}
+                            ) : "Click to select PDF, DOCX, TXT, or MD"}
                         </p>
                         <p style={{ margin: "4px 0 0 0", fontSize: "0.8rem", color: "#64748b" }}>
                             Max file size 20MB
