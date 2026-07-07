@@ -1124,6 +1124,12 @@ export default function PresentationPage() {
                             const slideBulletBg = isDark ? "rgba(255, 255, 255, 0.1)" : colors.accentLight;
                             const slideBulletBorder = isDark ? "rgba(255, 255, 255, 0.3)" : colors.accent;
                             const slideBulletColor = isDark ? "#f8fafc" : colors.accent;
+                            const showSideImage = !!(slide.image && 
+                                (slide.image.position === "left" || slide.image.position === "right") && 
+                                slide.image.url && 
+                                slide.layout_type !== "title" && 
+                                slide.layout_type !== "image_text");
+                            const imagePos = slide.image?.position;
 
                             return (
                                 <div
@@ -1216,299 +1222,148 @@ export default function PresentationPage() {
                                         </button>
                                     </div>
                                 </div>                                {/* Slide Layout Renderer Switcher */}
-                                <div style={{ flexGrow: 1, width: "100%", marginTop: "24px" }}>
-                                    {(() => {
-                                        const currentLayout = slide.layout_type || "bullet_list";
+                                <div style={{ 
+                                    display: "grid", 
+                                    gridTemplateColumns: showSideImage ? (imagePos === "left" ? "1fr 1.2fr" : "1.2fr 1fr") : "1fr", 
+                                    gap: "36px", 
+                                    alignItems: "center",
+                                    width: "100%", 
+                                    marginTop: "24px" 
+                                }}>
+                                    {/* Left Side Image */}
+                                    {showSideImage && imagePos === "left" && (
+                                        <div style={{ width: "100%" }}>
+                                            {renderSlideImage(slide, index)}
+                                        </div>
+                                    )}
 
-                                        if (currentLayout === "title") {
-                                            return (
-                                                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: "100%", minHeight: "260px", textAlign: "center" }}>
-                                                    <AutoGrowingTextarea
-                                                        value={slide.subtitle || ""}
-                                                        onChange={(val) => handleUpdateSubtitle(index, val)}
-                                                        placeholder="Add subtitle or presenter info..."
-                                                        style={{
-                                                            fontSize: "1.2rem",
-                                                            color: slideMutedColor,
-                                                            backgroundColor: "transparent",
-                                                            border: "none",
-                                                            textAlign: "center",
-                                                            outline: "none",
-                                                            width: "80%",
-                                                            marginBottom: "12px",
-                                                            fontStyle: "italic"
-                                                        }}
-                                                    />
-                                                    <div style={{ width: "60px", height: "4px", backgroundColor: colors.accent, borderRadius: "2px", margin: "16px 0" }} />
-                                                    <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", justifyContent: "center", marginTop: "10px" }}>
-                                                        {slide.content.map((point, i) => (
-                                                            <div key={i} style={{ fontSize: "0.95rem", color: slideTextColor }}>
-                                                                {point}
-                                                            </div>
-                                                        ))}
-                                                    </div>
-                                                </div>
-                                            );
-                                        }
+                                    {/* Top Image */}
+                                    {slide.image && slide.image.position === "top" && slide.image.url && slide.layout_type !== "title" && slide.layout_type !== "image_text" && (
+                                        <div style={{ width: "100%", marginBottom: "20px", gridColumn: showSideImage ? "span 2" : "auto" }}>
+                                            {renderSlideImage(slide, index)}
+                                        </div>
+                                    )}
 
-                                        if (currentLayout === "bullet_list") {
-                                            return (
-                                                <div style={{ width: "100%" }}>
-                                                    {slide.subtitle && (
+                                    {/* Main content of the layout */}
+                                    <div style={{ width: "100%" }}>
+                                        {(() => {
+                                            const currentLayout = slide.layout_type || "bullet_list";
+
+                                            if (currentLayout === "title") {
+                                                return (
+                                                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: "100%", minHeight: "260px", textAlign: "center" }}>
                                                         <AutoGrowingTextarea
-                                                            value={slide.subtitle}
+                                                            value={slide.subtitle || ""}
                                                             onChange={(val) => handleUpdateSubtitle(index, val)}
-                                                            style={{ fontSize: "1.1rem", color: slideMutedColor, backgroundColor: "transparent", border: "none", width: "100%", padding: "4px 8px", outline: "none", marginBottom: "12px" }}
+                                                            placeholder="Add subtitle or presenter info..."
+                                                            style={{
+                                                                fontSize: "1.2rem",
+                                                                color: slideMutedColor,
+                                                                backgroundColor: "transparent",
+                                                                border: "none",
+                                                                textAlign: "center",
+                                                                outline: "none",
+                                                                width: "80%",
+                                                                marginBottom: "12px",
+                                                                fontStyle: "italic"
+                                                            }}
                                                         />
-                                                    )}
-                                                    <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
-                                                        {slide.content.map((point, i) => (
-                                                            <div key={i} className="bullet-row">
-                                                                <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "18px", height: "18px", borderRadius: "50%", backgroundColor: slideBulletBg, border: `1.5px solid ${slideBulletBorder}`, marginTop: "6px", fontSize: "0.65rem", color: slideBulletColor, fontWeight: "bold", flexShrink: 0 }}>✓</span>
-                                                                <AutoGrowingTextarea
-                                                                    value={point}
-                                                                    onChange={(val) => handleUpdateBullet(index, i, val)}
-                                                                    style={{ fontSize: "1.05rem", color: slideTextColor, backgroundColor: "transparent", border: "none", width: "100%", outline: "none", flexGrow: 1 }}
-                                                                />
-                                                                <button className="no-print bullet-delete-btn" onClick={() => handleDeleteBullet(index, i)} style={{ color: "#ef4444", backgroundColor: "transparent", border: "none", cursor: "pointer", fontSize: "1.2rem", padding: "0 8px" }}>×</button>
-                                                            </div>
-                                                        ))}
+                                                        <div style={{ width: "60px", height: "4px", backgroundColor: colors.accent, borderRadius: "2px", margin: "16px 0" }} />
+                                                        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", justifyContent: "center", marginTop: "10px" }}>
+                                                            {slide.content.map((point, i) => (
+                                                                <div key={i} style={{ fontSize: "0.95rem", color: slideTextColor }}>
+                                                                    {point}
+                                                                </div>
+                                                            ))}
+                                                        </div>
                                                     </div>
-                                                    <div style={{ display: "flex", alignItems: "center" }}>
-                                                        <button className="no-print" onClick={() => handleAddBullet(index)} style={{ color: colors.accent, backgroundColor: "transparent", border: "none", fontWeight: 700, fontSize: "0.9rem", cursor: "pointer", marginTop: "20px", display: "inline-flex", alignItems: "center", gap: "4px" }}>➕ Add Point</button>
-                                                        {(!slide.image || slide.image.position === "none") && (
-                                                            <button className="no-print" onClick={() => openImageSearch(index, slide.image_keyword || slide.title || "")} style={{ color: colors.accent, backgroundColor: "transparent", border: "none", fontWeight: 700, fontSize: "0.9rem", cursor: "pointer", marginTop: "20px", marginLeft: "16px", display: "inline-flex", alignItems: "center", gap: "4px" }}>🖼️ Add Image</button>
+                                                );
+                                            }
+
+                                            if (currentLayout === "bullet_list") {
+                                                return (
+                                                    <div style={{ width: "100%" }}>
+                                                        {slide.subtitle && (
+                                                            <AutoGrowingTextarea
+                                                                value={slide.subtitle}
+                                                                onChange={(val) => handleUpdateSubtitle(index, val)}
+                                                                style={{ fontSize: "1.1rem", color: slideMutedColor, backgroundColor: "transparent", border: "none", width: "100%", padding: "4px 8px", outline: "none", marginBottom: "12px" }}
+                                                            />
                                                         )}
-                                                    </div>
-                                                </div>
-                                            );
-                                        }
-
-                                        if (currentLayout === "two_column") {
-                                            const mid = Math.ceil(slide.content.length / 2);
-                                            const col1 = slide.content.slice(0, mid);
-                                            const col2 = slide.content.slice(mid);
-                                            return (
-                                                <div style={{ width: "100%" }}>
-                                                    {slide.subtitle && (
-                                                        <AutoGrowingTextarea
-                                                            value={slide.subtitle}
-                                                            onChange={(val) => handleUpdateSubtitle(index, val)}
-                                                            style={{ fontSize: "1.1rem", color: slideMutedColor, backgroundColor: "transparent", border: "none", width: "100%", padding: "4px 8px", outline: "none", marginBottom: "12px" }}
-                                                        />
-                                                    )}
-                                                    <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "30px", marginTop: "12px" }}>
-                                                        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                                                            {col1.map((point, i) => (
+                                                        <div style={{ display: "flex", flexDirection: "column", gap: "14px" }}>
+                                                            {slide.content.map((point, i) => (
                                                                 <div key={i} className="bullet-row">
                                                                     <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "18px", height: "18px", borderRadius: "50%", backgroundColor: slideBulletBg, border: `1.5px solid ${slideBulletBorder}`, marginTop: "6px", fontSize: "0.65rem", color: slideBulletColor, fontWeight: "bold", flexShrink: 0 }}>✓</span>
                                                                     <AutoGrowingTextarea
                                                                         value={point}
                                                                         onChange={(val) => handleUpdateBullet(index, i, val)}
-                                                                        style={{ fontSize: "1rem", color: slideTextColor, backgroundColor: "transparent", border: "none", width: "100%", outline: "none" }}
+                                                                        style={{ fontSize: "1.05rem", color: slideTextColor, backgroundColor: "transparent", border: "none", width: "100%", outline: "none", flexGrow: 1 }}
                                                                     />
+                                                                    <button className="no-print bullet-delete-btn" onClick={() => handleDeleteBullet(index, i)} style={{ color: "#ef4444", backgroundColor: "transparent", border: "none", cursor: "pointer", fontSize: "1.2rem", padding: "0 8px" }}>×</button>
                                                                 </div>
                                                             ))}
                                                         </div>
-                                                        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                                                            {col2.map((point, i) => {
-                                                                const actualIdx = mid + i;
-                                                                return (
+                                                        <div style={{ display: "flex", alignItems: "center" }}>
+                                                            <button className="no-print" onClick={() => handleAddBullet(index)} style={{ color: colors.accent, backgroundColor: "transparent", border: "none", fontWeight: 700, fontSize: "0.9rem", cursor: "pointer", marginTop: "20px", display: "inline-flex", alignItems: "center", gap: "4px" }}>➕ Add Point</button>
+                                                            {(!slide.image || slide.image.position === "none") && (
+                                                                <button className="no-print" onClick={() => openImageSearch(index, slide.image_keyword || slide.title || "")} style={{ color: colors.accent, backgroundColor: "transparent", border: "none", fontWeight: 700, fontSize: "0.9rem", cursor: "pointer", marginTop: "20px", marginLeft: "16px", display: "inline-flex", alignItems: "center", gap: "4px" }}>🖼️ Add Image</button>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+
+                                            if (currentLayout === "two_column") {
+                                                const mid = Math.ceil(slide.content.length / 2);
+                                                const col1 = slide.content.slice(0, mid);
+                                                const col2 = slide.content.slice(mid);
+                                                return (
+                                                    <div style={{ width: "100%" }}>
+                                                        {slide.subtitle && (
+                                                            <AutoGrowingTextarea
+                                                                value={slide.subtitle}
+                                                                onChange={(val) => handleUpdateSubtitle(index, val)}
+                                                                style={{ fontSize: "1.1rem", color: slideMutedColor, backgroundColor: "transparent", border: "none", width: "100%", padding: "4px 8px", outline: "none", marginBottom: "12px" }}
+                                                            />
+                                                        )}
+                                                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "30px", marginTop: "12px" }}>
+                                                            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                                                                {col1.map((point, i) => (
                                                                     <div key={i} className="bullet-row">
                                                                         <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "18px", height: "18px", borderRadius: "50%", backgroundColor: slideBulletBg, border: `1.5px solid ${slideBulletBorder}`, marginTop: "6px", fontSize: "0.65rem", color: slideBulletColor, fontWeight: "bold", flexShrink: 0 }}>✓</span>
                                                                         <AutoGrowingTextarea
                                                                             value={point}
-                                                                            onChange={(val) => handleUpdateBullet(index, actualIdx, val)}
+                                                                            onChange={(val) => handleUpdateBullet(index, i, val)}
                                                                             style={{ fontSize: "1rem", color: slideTextColor, backgroundColor: "transparent", border: "none", width: "100%", outline: "none" }}
                                                                         />
                                                                     </div>
-                                                                );
-                                                            })}
-                                                        </div>
-                                                    </div>
-                                                    <button className="no-print" onClick={() => handleAddBullet(index)} style={{ color: colors.accent, backgroundColor: "transparent", border: "none", fontWeight: 700, fontSize: "0.9rem", cursor: "pointer", marginTop: "20px", display: "inline-flex", alignItems: "center", gap: "4px" }}>➕ Add Point</button>
-                                                </div>
-                                            );
-                                        }
-
-                                        if (currentLayout === "timeline") {
-                                            const timeline = slide.timeline_data || [];
-                                            return (
-                                                <div style={{ width: "100%" }}>
-                                                    {slide.subtitle && (
-                                                        <AutoGrowingTextarea
-                                                            value={slide.subtitle}
-                                                            onChange={(val) => handleUpdateSubtitle(index, val)}
-                                                            style={{ fontSize: "1.1rem", color: slideMutedColor, backgroundColor: "transparent", border: "none", width: "100%", padding: "4px 8px", outline: "none", marginBottom: "16px" }}
-                                                        />
-                                                    )}
-                                                    <div style={{ position: "relative", padding: "20px 0" }}>
-                                                        <div style={{ position: "absolute", top: "50%", left: 0, right: 0, height: "4px", backgroundColor: colors.accent, borderRadius: "2px", zIndex: 1, transform: "translateY(-50%)" }} />
-                                                        <div style={{ display: "grid", gridTemplateColumns: `repeat(${timeline.length || 1}, 1fr)`, gap: "16px", zIndex: 2, position: "relative" }}>
-                                                            {timeline.map((item, idx) => (
-                                                                <div key={idx} style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
-                                                                    <div style={{ width: "18px", height: "18px", borderRadius: "50%", backgroundColor: colors.cardBg, border: `4px solid ${colors.accent}`, marginBottom: "12px", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }} />
-                                                                    <div style={{ fontWeight: 800, fontSize: "0.95rem", color: colors.accent }}>{item.label}</div>
-                                                                    {item.detail && <div style={{ fontSize: "0.8rem", color: slideTextColor, marginTop: "6px", lineHeight: 1.4, opacity: 0.8 }}>{item.detail}</div>}
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    </div>
-                                                </div>
-                                            );
-                                        }
-
-                                        if (currentLayout === "comparison") {
-                                            const comp = slide.comparison_table || { headers: ["Criteria", "Option A", "Option B"], rows: [] };
-                                            return (
-                                                <div style={{ width: "100%" }}>
-                                                    {slide.subtitle && (
-                                                        <AutoGrowingTextarea
-                                                            value={slide.subtitle}
-                                                            onChange={(val) => handleUpdateSubtitle(index, val)}
-                                                            style={{ fontSize: "1.1rem", color: slideMutedColor, backgroundColor: "transparent", border: "none", width: "100%", padding: "4px 8px", outline: "none", marginBottom: "16px" }}
-                                                        />
-                                                    )}
-                                                    <div style={{ overflowX: "auto", marginTop: "12px" }}>
-                                                        <table style={{ width: "100%", borderCollapse: "collapse", border: `1.5px solid ${slideBorderColor}` }}>
-                                                            <thead>
-                                                                <tr style={{ backgroundColor: colors.accent, color: "#ffffff" }}>
-                                                                    {comp.headers.map((h, colIdx) => (
-                                                                        <th key={colIdx} style={{ padding: "12px", textAlign: "left", fontSize: "0.9rem", fontWeight: 700, border: `1px solid ${slideBorderColor}` }}>
-                                                                            {h}
-                                                                        </th>
-                                                                    ))}
-                                                                </tr>
-                                                            </thead>
-                                                            <tbody>
-                                                                {comp.rows.map((row, rIdx) => (
-                                                                    <tr key={rIdx} style={{ backgroundColor: rIdx % 2 === 0 ? "rgba(0,0,0,0.02)" : "transparent" }}>
-                                                                        {row.map((cell, cIdx) => (
-                                                                            <td key={cIdx} style={{ padding: "12px", fontSize: "0.85rem", color: slideTextColor, border: `1px solid ${slideBorderColor}` }}>
-                                                                                {cell}
-                                                                            </td>
-                                                                        ))}
-                                                                    </tr>
-                                                                ))}
-                                                            </tbody>
-                                                        </table>
-                                                    </div>
-                                                </div>
-                                            );
-                                        }
-
-                                        if (currentLayout === "cards") {
-                                            return (
-                                                <div style={{ width: "100%" }}>
-                                                    {slide.subtitle && (
-                                                        <AutoGrowingTextarea
-                                                            value={slide.subtitle}
-                                                            onChange={(val) => handleUpdateSubtitle(index, val)}
-                                                            style={{ fontSize: "1.1rem", color: slideMutedColor, backgroundColor: "transparent", border: "none", width: "100%", padding: "4px 8px", outline: "none", marginBottom: "16px" }}
-                                                        />
-                                                    )}
-                                                    <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(3, slide.content.length) || 1}, 1fr)`, gap: "20px", marginTop: "12px" }}>
-                                                        {slide.content.map((point, idx) => {
-                                                            const [cTitle, ...cBody] = point.split(": ");
-                                                            const hasSplit = cBody.length > 0;
-                                                            return (
-                                                                <div key={idx} style={{ backgroundColor: colors.cardBg, border: `1.5px solid ${colors.accent}20`, borderRadius: "14px", padding: "20px", display: "flex", flexDirection: "column", gap: "8px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.02)" }}>
-                                                                    <div style={{ fontWeight: 800, fontSize: "1.1rem", color: colors.accent }}>{hasSplit ? cTitle : `Pillar ${idx + 1}`}</div>
-                                                                    <div style={{ fontSize: "0.9rem", color: slideTextColor, lineHeight: 1.5, opacity: 0.9 }}>{hasSplit ? cBody.join(": ") : point}</div>
-                                                                </div>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                </div>
-                                            );
-                                        }
-
-                                        if (currentLayout === "process_flow") {
-                                            return (
-                                                <div style={{ width: "100%" }}>
-                                                    {slide.subtitle && (
-                                                        <AutoGrowingTextarea
-                                                            value={slide.subtitle}
-                                                            onChange={(val) => handleUpdateSubtitle(index, val)}
-                                                            style={{ fontSize: "1.1rem", color: slideMutedColor, backgroundColor: "transparent", border: "none", width: "100%", padding: "4px 8px", outline: "none", marginBottom: "16px" }}
-                                                        />
-                                                    )}
-                                                    <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "16px", marginTop: "12px" }}>
-                                                        {slide.content.map((step, idx) => {
-                                                            const textContent = step.includes(":") ? step.split(":").slice(1).join(":").trim() : step;
-                                                            const stepTitle = step.includes(":") ? step.split(":")[0].trim() : `Step ${idx+1}`;
-                                                            return (
-                                                                <div key={idx} style={{ display: "flex", alignItems: "center", gap: "16px" }}>
-                                                                    <div style={{ backgroundColor: colors.accentLight, border: `2px solid ${colors.accent}`, borderRadius: "12px", padding: "16px 20px", width: "170px", boxShadow: "0 4px 6px rgba(0,0,0,0.02)" }}>
-                                                                        <div style={{ fontSize: "0.8rem", fontWeight: 800, color: colors.accent, marginBottom: "6px" }}>{stepTitle}</div>
-                                                                        <div style={{ fontSize: "0.85rem", color: colors.text, fontWeight: 500, lineHeight: 1.4 }}>{textContent || step}</div>
-                                                                    </div>
-                                                                    {idx < slide.content.length - 1 && (
-                                                                        <span style={{ fontSize: "1.6rem", color: colors.accent, fontWeight: "bold" }}>➔</span>
-                                                                    )}
-                                                                </div>
-                                                            );
-                                                        })}
-                                                    </div>
-                                                </div>
-                                            );
-                                        }
-
-                                        if (currentLayout === "statistics") {
-                                            const mainStat = slide.content[0] || "100%";
-                                            const chart = slide.chart_data || { type: "bar", labels: [], values: [] };
-                                            return (
-                                                <div style={{ width: "100%" }}>
-                                                    {slide.subtitle && (
-                                                        <AutoGrowingTextarea
-                                                            value={slide.subtitle}
-                                                            onChange={(val) => handleUpdateSubtitle(index, val)}
-                                                            style={{ fontSize: "1.1rem", color: slideMutedColor, backgroundColor: "transparent", border: "none", width: "100%", padding: "4px 8px", outline: "none", marginBottom: "16px" }}
-                                                        />
-                                                    )}
-                                                    <div style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr", gap: "36px", alignItems: "center", marginTop: "12px" }}>
-                                                        <div>
-                                                            <div style={{ fontSize: "3.8rem", fontWeight: 900, color: colors.accent, lineHeight: 1 }}>{mainStat}</div>
-                                                            <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "16px" }}>
-                                                                {slide.content.slice(1).map((p, i) => (
-                                                                    <div key={i} style={{ fontSize: "0.95rem", color: slideTextColor, opacity: 0.9 }}>• {p}</div>
                                                                 ))}
                                                             </div>
+                                                            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                                                                {col2.map((point, i) => {
+                                                                    const actualIdx = mid + i;
+                                                                    return (
+                                                                        <div key={i} className="bullet-row">
+                                                                            <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "18px", height: "18px", borderRadius: "50%", backgroundColor: slideBulletBg, border: `1.5px solid ${slideBulletBorder}`, marginTop: "6px", fontSize: "0.65rem", color: slideBulletColor, fontWeight: "bold", flexShrink: 0 }}>✓</span>
+                                                                            <AutoGrowingTextarea
+                                                                                value={point}
+                                                                                onChange={(val) => handleUpdateBullet(index, actualIdx, val)}
+                                                                                style={{ fontSize: "1rem", color: slideTextColor, backgroundColor: "transparent", border: "none", width: "100%", outline: "none" }}
+                                                                            />
+                                                                        </div>
+                                                                    );
+                                                                })}
+                                                            </div>
                                                         </div>
-                                                        <div style={{ borderLeft: `2px solid ${slideBorderColor}`, paddingLeft: "30px" }}>
-                                                            {chart.labels.length > 0 && (
-                                                                <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                                                                    <div style={{ fontSize: "0.85rem", fontWeight: 800, color: colors.accent, textTransform: "uppercase" }}>{chart.title || "Analytics Overview"}</div>
-                                                                    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                                                                        {chart.labels.map((lbl, idx) => {
-                                                                            const val = chart.values[idx] || 0;
-                                                                            const maxVal = Math.max(...chart.values, 1);
-                                                                            const pct = (val / maxVal) * 100;
-                                                                            return (
-                                                                                <div key={idx} style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                                                                                    <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", color: slideTextColor }}>
-                                                                                        <span>{lbl}</span>
-                                                                                        <span style={{ fontWeight: "bold" }}>{val}</span>
-                                                                                    </div>
-                                                                                    <div style={{ width: "100%", height: "8px", backgroundColor: "rgba(0,0,0,0.06)", borderRadius: "4px", overflow: "hidden" }}>
-                                                                                        <div style={{ width: `${pct}%`, height: "100%", backgroundColor: colors.accent }} />
-                                                                                    </div>
-                                                                                </div>
-                                                                            );
-                                                                        })}
-                                                                    </div>
-                                                                </div>
-                                                            )}
-                                                        </div>
+                                                        <button className="no-print" onClick={() => handleAddBullet(index)} style={{ color: colors.accent, backgroundColor: "transparent", border: "none", fontWeight: 700, fontSize: "0.9rem", cursor: "pointer", marginTop: "20px", display: "inline-flex", alignItems: "center", gap: "4px" }}>➕ Add Point</button>
                                                     </div>
-                                                </div>
-                                            );
-                                        }
+                                                );
+                                            }
 
-                                        if (currentLayout === "image_text") {
-                                            return (
-                                                <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "36px", alignItems: "center", width: "100%" }}>
-                                                    <div>
+                                            if (currentLayout === "timeline") {
+                                                const timeline = slide.timeline_data || [];
+                                                return (
+                                                    <div style={{ width: "100%" }}>
                                                         {slide.subtitle && (
                                                             <AutoGrowingTextarea
                                                                 value={slide.subtitle}
@@ -1516,56 +1371,237 @@ export default function PresentationPage() {
                                                                 style={{ fontSize: "1.1rem", color: slideMutedColor, backgroundColor: "transparent", border: "none", width: "100%", padding: "4px 8px", outline: "none", marginBottom: "16px" }}
                                                             />
                                                         )}
-                                                        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
-                                                            {slide.content.map((point, i) => (
-                                                                <div key={i} className="bullet-row">
-                                                                    <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "18px", height: "18px", borderRadius: "50%", backgroundColor: slideBulletBg, border: `1.5px solid ${slideBulletBorder}`, marginTop: "6px", fontSize: "0.65rem", color: slideBulletColor, fontWeight: "bold", flexShrink: 0 }}>✓</span>
-                                                                    <AutoGrowingTextarea
-                                                                        value={point}
-                                                                        onChange={(val) => handleUpdateBullet(index, i, val)}
-                                                                        style={{ fontSize: "1rem", color: slideTextColor, backgroundColor: "transparent", border: "none", width: "100%", outline: "none" }}
-                                                                    />
-                                                                </div>
-                                                            ))}
+                                                        <div style={{ position: "relative", padding: "20px 0" }}>
+                                                            <div style={{ position: "absolute", top: "50%", left: 0, right: 0, height: "4px", backgroundColor: colors.accent, borderRadius: "2px", zIndex: 1, transform: "translateY(-50%)" }} />
+                                                            <div style={{ display: "grid", gridTemplateColumns: `repeat(${timeline.length || 1}, 1fr)`, gap: "16px", zIndex: 2, position: "relative" }}>
+                                                                {timeline.map((item, idx) => (
+                                                                    <div key={idx} style={{ display: "flex", flexDirection: "column", alignItems: "center", textAlign: "center" }}>
+                                                                        <div style={{ width: "18px", height: "18px", borderRadius: "50%", backgroundColor: colors.cardBg, border: `4px solid ${colors.accent}`, marginBottom: "12px", boxShadow: "0 2px 4px rgba(0,0,0,0.1)" }} />
+                                                                        <div style={{ fontWeight: 800, fontSize: "0.95rem", color: colors.accent }}>{item.label}</div>
+                                                                        {item.detail && <div style={{ fontSize: "0.8rem", color: slideTextColor, marginTop: "6px", lineHeight: 1.4, opacity: 0.8 }}>{item.detail}</div>}
+                                                                    </div>
+                                                                ))}
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                    <div>
-                                                        {renderSlideImage(slide, index) || (
-                                                            <div onClick={() => openImageSearch(index, slide.image_keyword || slide.title || "")} style={{ border: `2px dashed ${slideBorderColor}`, borderRadius: "12px", padding: "40px", textAlign: "center", cursor: "pointer", color: colors.accent, fontWeight: "bold" }}>
-                                                                🖼️ Add Slide Image
-                                                            </div>
+                                                );
+                                            }
+
+                                            if (currentLayout === "comparison") {
+                                                const comp = slide.comparison_table || { headers: ["Criteria", "Option A", "Option B"], rows: [] };
+                                                return (
+                                                    <div style={{ width: "100%" }}>
+                                                        {slide.subtitle && (
+                                                            <AutoGrowingTextarea
+                                                                value={slide.subtitle}
+                                                                onChange={(val) => handleUpdateSubtitle(index, val)}
+                                                                style={{ fontSize: "1.1rem", color: slideMutedColor, backgroundColor: "transparent", border: "none", width: "100%", padding: "4px 8px", outline: "none", marginBottom: "16px" }}
+                                                            />
                                                         )}
+                                                        <div style={{ overflowX: "auto", marginTop: "12px" }}>
+                                                            <table style={{ width: "100%", borderCollapse: "collapse", border: `1.5px solid ${slideBorderColor}` }}>
+                                                                <thead>
+                                                                    <tr style={{ backgroundColor: colors.accent, color: "#ffffff" }}>
+                                                                        {comp.headers.map((h, colIdx) => (
+                                                                            <th key={colIdx} style={{ padding: "12px", textAlign: "left", fontSize: "0.9rem", fontWeight: 700, border: `1px solid ${slideBorderColor}` }}>
+                                                                                {h}
+                                                                            </th>
+                                                                        ))}
+                                                                    </tr>
+                                                                </thead>
+                                                                <tbody>
+                                                                    {comp.rows.map((row, rIdx) => (
+                                                                        <tr key={rIdx} style={{ backgroundColor: rIdx % 2 === 0 ? "rgba(0,0,0,0.02)" : "transparent" }}>
+                                                                            {row.map((cell, cIdx) => (
+                                                                                <td key={cIdx} style={{ padding: "12px", fontSize: "0.85rem", color: slideTextColor, border: `1px solid ${slideBorderColor}` }}>
+                                                                                    {cell}
+                                                                                </td>
+                                                                            ))}
+                                                                        </tr>
+                                                                    ))}
+                                                                </tbody>
+                                                            </table>
+                                                        </div>
                                                     </div>
-                                                </div>
-                                            );
-                                        }
+                                                );
+                                            }
 
-                                        if (currentLayout === "quote") {
-                                            return (
-                                                <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "200px", textAlign: "center", position: "relative", padding: "20px 40px" }}>
-                                                    <span style={{ fontSize: "6rem", position: "absolute", left: "10px", top: "-20px", color: colors.accent, opacity: 0.15, fontFamily: "Georgia, serif" }}>“</span>
-                                                    <AutoGrowingTextarea
-                                                        value={slide.content[0] || ""}
-                                                        onChange={(val) => handleUpdateBullet(index, 0, val)}
-                                                        placeholder="Paste or write quote details..."
-                                                        style={{ fontSize: "1.5rem", fontStyle: "italic", fontWeight: 600, color: colors.accent, backgroundColor: "transparent", border: "none", textAlign: "center", outline: "none", width: "90%", lineHeight: 1.5 }}
-                                                    />
-                                                    <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginTop: "24px", width: "100%" }}>
-                                                        <span style={{ height: "1.5px", width: "24px", backgroundColor: colors.accent }} />
-                                                        <input
-                                                            value={slide.subtitle || ""}
-                                                            onChange={(e) => handleUpdateSubtitle(index, e.target.value)}
-                                                            placeholder="Quote Author Name"
-                                                            style={{ fontSize: "1rem", fontWeight: "bold", color: slideTextColor, backgroundColor: "transparent", border: "none", outline: "none", textAlign: "center", width: "200px" }}
+                                            if (currentLayout === "cards") {
+                                                return (
+                                                    <div style={{ width: "100%" }}>
+                                                        {slide.subtitle && (
+                                                            <AutoGrowingTextarea
+                                                                value={slide.subtitle}
+                                                                onChange={(val) => handleUpdateSubtitle(index, val)}
+                                                                style={{ fontSize: "1.1rem", color: slideMutedColor, backgroundColor: "transparent", border: "none", width: "100%", padding: "4px 8px", outline: "none", marginBottom: "16px" }}
+                                                            />
+                                                        )}
+                                                        <div style={{ display: "grid", gridTemplateColumns: `repeat(${Math.min(3, slide.content.length) || 1}, 1fr)`, gap: "20px", marginTop: "12px" }}>
+                                                            {slide.content.map((point, idx) => {
+                                                                const [cTitle, ...cBody] = point.split(": ");
+                                                                const hasSplit = cBody.length > 0;
+                                                                return (
+                                                                    <div key={idx} style={{ backgroundColor: colors.cardBg, border: `1.5px solid ${colors.accent}20`, borderRadius: "14px", padding: "20px", display: "flex", flexDirection: "column", gap: "8px", boxShadow: "0 4px 6px -1px rgba(0,0,0,0.02)" }}>
+                                                                        <div style={{ fontWeight: 800, fontSize: "1.1rem", color: colors.accent }}>{hasSplit ? cTitle : `Pillar ${idx + 1}`}</div>
+                                                                        <div style={{ fontSize: "0.9rem", color: slideTextColor, lineHeight: 1.5, opacity: 0.9 }}>{hasSplit ? cBody.join(": ") : point}</div>
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+
+                                            if (currentLayout === "process_flow") {
+                                                return (
+                                                    <div style={{ width: "100%" }}>
+                                                        {slide.subtitle && (
+                                                            <AutoGrowingTextarea
+                                                                value={slide.subtitle}
+                                                                onChange={(val) => handleUpdateSubtitle(index, val)}
+                                                                style={{ fontSize: "1.1rem", color: slideMutedColor, backgroundColor: "transparent", border: "none", width: "100%", padding: "4px 8px", outline: "none", marginBottom: "16px" }}
+                                                            />
+                                                        )}
+                                                        <div style={{ display: "flex", flexWrap: "wrap", alignItems: "center", gap: "16px", marginTop: "12px" }}>
+                                                            {slide.content.map((step, idx) => {
+                                                                const textContent = step.includes(":") ? step.split(":").slice(1).join(":").trim() : step;
+                                                                const stepTitle = step.includes(":") ? step.split(":")[0].trim() : `Step ${idx+1}`;
+                                                                return (
+                                                                    <div key={idx} style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                                                                        <div style={{ backgroundColor: colors.accentLight, border: `2px solid ${colors.accent}`, borderRadius: "12px", padding: "16px 20px", width: "170px", boxShadow: "0 4px 6px rgba(0,0,0,0.02)" }}>
+                                                                            <div style={{ fontSize: "0.8rem", fontWeight: 800, color: colors.accent, marginBottom: "6px" }}>{stepTitle}</div>
+                                                                            <div style={{ fontSize: "0.85rem", color: colors.text, fontWeight: 500, lineHeight: 1.4 }}>{textContent || step}</div>
+                                                                        </div>
+                                                                        {idx < slide.content.length - 1 && (
+                                                                            <span style={{ fontSize: "1.6rem", color: colors.accent, fontWeight: "bold" }}>➔</span>
+                                                                        )}
+                                                                    </div>
+                                                                );
+                                                            })}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+
+                                            if (currentLayout === "statistics") {
+                                                const mainStat = slide.content[0] || "100%";
+                                                const chart = slide.chart_data || { type: "bar", labels: [], values: [] };
+                                                return (
+                                                    <div style={{ width: "100%" }}>
+                                                        {slide.subtitle && (
+                                                            <AutoGrowingTextarea
+                                                                value={slide.subtitle}
+                                                                onChange={(val) => handleUpdateSubtitle(index, val)}
+                                                                style={{ fontSize: "1.1rem", color: slideMutedColor, backgroundColor: "transparent", border: "none", width: "100%", padding: "4px 8px", outline: "none", marginBottom: "16px" }}
+                                                            />
+                                                        )}
+                                                        <div style={{ display: "grid", gridTemplateColumns: "1.1fr 1fr", gap: "36px", alignItems: "center", marginTop: "12px" }}>
+                                                            <div>
+                                                                <div style={{ fontSize: "3.8rem", fontWeight: 900, color: colors.accent, lineHeight: 1 }}>{mainStat}</div>
+                                                                <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "16px" }}>
+                                                                    {slide.content.slice(1).map((p, i) => (
+                                                                        <div key={i} style={{ fontSize: "0.95rem", color: slideTextColor, opacity: 0.9 }}>• {p}</div>
+                                                                    ))}
+                                                                </div>
+                                                            </div>
+                                                            <div style={{ borderLeft: `2px solid ${slideBorderColor}`, paddingLeft: "30px" }}>
+                                                                {chart.labels.length > 0 && (
+                                                                    <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                                                                        <div style={{ fontSize: "0.85rem", fontWeight: 800, color: colors.accent, textTransform: "uppercase" }}>{chart.title || "Analytics Overview"}</div>
+                                                                        <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                                                                            {chart.labels.map((lbl, idx) => {
+                                                                                const val = chart.values[idx] || 0;
+                                                                                const maxVal = Math.max(...chart.values, 1);
+                                                                                const pct = (val / maxVal) * 100;
+                                                                                return (
+                                                                                    <div key={idx} style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
+                                                                                        <div style={{ display: "flex", justifyContent: "space-between", fontSize: "0.78rem", color: slideTextColor }}>
+                                                                                            <span>{lbl}</span>
+                                                                                            <span style={{ fontWeight: "bold" }}>{val}</span>
+                                                                                        </div>
+                                                                                        <div style={{ width: "100%", height: "8px", backgroundColor: "rgba(0,0,0,0.06)", borderRadius: "4px", overflow: "hidden" }}>
+                                                                                            <div style={{ width: `${pct}%`, height: "100%", backgroundColor: colors.accent }} />
+                                                                                        </div>
+                                                                                    </div>
+                                                                                );
+                                                                            })}
+                                                                        </div>
+                                                                    </div>
+                                                                )}
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+
+                                            if (currentLayout === "image_text") {
+                                                return (
+                                                    <div style={{ display: "grid", gridTemplateColumns: "1.2fr 1fr", gap: "36px", alignItems: "center", width: "100%" }}>
+                                                        <div>
+                                                            {slide.subtitle && (
+                                                                <AutoGrowingTextarea
+                                                                    value={slide.subtitle}
+                                                                    onChange={(val) => handleUpdateSubtitle(index, val)}
+                                                                    style={{ fontSize: "1.1rem", color: slideMutedColor, backgroundColor: "transparent", border: "none", width: "100%", padding: "4px 8px", outline: "none", marginBottom: "16px" }}
+                                                                />
+                                                            )}
+                                                            <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+                                                                {slide.content.map((point, i) => (
+                                                                    <div key={i} className="bullet-row">
+                                                                        <span style={{ display: "inline-flex", alignItems: "center", justifyContent: "center", width: "18px", height: "18px", borderRadius: "50%", backgroundColor: slideBulletBg, border: `1.5px solid ${slideBulletBorder}`, marginTop: "6px", fontSize: "0.65rem", color: slideBulletColor, fontWeight: "bold", flexShrink: 0 }}>✓</span>
+                                                                        <AutoGrowingTextarea
+                                                                            value={point}
+                                                                            onChange={(val) => handleUpdateBullet(index, i, val)}
+                                                                            style={{ fontSize: "1rem", color: slideTextColor, backgroundColor: "transparent", border: "none", width: "100%", outline: "none" }}
+                                                                        />
+                                                                    </div>
+                                                                ))}
+                                                            </div>
+                                                        </div>
+                                                        <div>
+                                                            {renderSlideImage(slide, index) || (
+                                                                <div onClick={() => openImageSearch(index, slide.image_keyword || slide.title || "")} style={{ border: `2px dashed ${slideBorderColor}`, borderRadius: "12px", padding: "40px", textAlign: "center", cursor: "pointer", color: colors.accent, fontWeight: "bold" }}>
+                                                                    🖼️ Add Slide Image
+                                                                </div>
+                                                            )}
+                                                        </div>
+                                                    </div>
+                                                );
+                                            }
+
+                                            if (currentLayout === "quote") {
+                                                return (
+                                                    <div style={{ width: "100%", display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", minHeight: "200px", textAlign: "center", position: "relative", padding: "20px 40px" }}>
+                                                        <span style={{ fontSize: "6rem", position: "absolute", left: "10px", top: "-20px", color: colors.accent, opacity: 0.15, fontFamily: "Georgia, serif" }}>“</span>
+                                                        <AutoGrowingTextarea
+                                                            value={slide.content[0] || ""}
+                                                            onChange={(val) => handleUpdateBullet(index, 0, val)}
+                                                            placeholder="Paste or write quote details..."
+                                                            style={{ fontSize: "1.5rem", fontStyle: "italic", fontWeight: 600, color: colors.accent, backgroundColor: "transparent", border: "none", textAlign: "center", outline: "none", width: "90%", lineHeight: 1.5 }}
                                                         />
+                                                        <div style={{ display: "flex", alignItems: "center", justifyContent: "center", gap: "8px", marginTop: "24px", width: "100%" }}>
+                                                            <span style={{ height: "1.5px", width: "24px", backgroundColor: colors.accent }} />
+                                                            <input
+                                                                value={slide.subtitle || ""}
+                                                                onChange={(e) => handleUpdateSubtitle(index, e.target.value)}
+                                                                placeholder="Quote Author Name"
+                                                                style={{ fontSize: "1rem", fontWeight: "bold", color: slideTextColor, backgroundColor: "transparent", border: "none", outline: "none", textAlign: "center", width: "200px" }}
+                                                            />
+                                                        </div>
+                                                        <span style={{ fontSize: "6rem", position: "absolute", right: "10px", bottom: "-40px", color: colors.accent, opacity: 0.15, fontFamily: "Georgia, serif" }}>”</span>
                                                     </div>
-                                                    <span style={{ fontSize: "6rem", position: "absolute", right: "10px", bottom: "-40px", color: colors.accent, opacity: 0.15, fontFamily: "Georgia, serif" }}>”</span>
-                                                </div>
-                                            );
-                                        }
+                                                );
+                                            }
 
-                                        return null;
-                                    })()}
+                                            return null;
+                                        })()}
+                                    </div>
+
+                                    {showSideImage && imagePos === "right" && (
+                                        <div style={{ width: "100%" }}>
+                                            {renderSlideImage(slide, index)}
+                                        </div>
+                                    )}
                                 </div>
 
                                 {/* Slide Customization Panel (Gamma style) */}

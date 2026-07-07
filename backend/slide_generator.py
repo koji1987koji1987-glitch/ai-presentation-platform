@@ -16,10 +16,29 @@ def load_env():
 
 load_env()
 
+def clean_image_query(query_str):
+    if not query_str:
+        return "presentation"
+    # Remove common filler phrases
+    clean = query_str.lower()
+    clean = re.sub(r'\b(create|generate|make|build|design|write)\s+(a\s+)?(\d+\s*-?\s*slides?\s+)?presentation(\s+(about|on|for))?\b', '', clean)
+    clean = re.sub(r'\bpresentation\b', '', clean)
+    clean = re.sub(r'\bslides\b', '', clean)
+    clean = re.sub(r'\babout\b', '', clean)
+    clean = re.sub(r'\bconcept\b', '', clean)
+    clean = re.sub(r'\bintroducing\b', '', clean)
+    clean = re.sub(r'\bintroduction\b', '', clean)
+    clean = clean.strip()
+    words = [w for w in clean.split() if w]
+    # Limit to max 3 words
+    return " ".join(words[:3]) if words else "presentation"
+
 def rule_based_fallback(text, user_prompt=None, requested_count=None):
     # Determine basic topic title from prompt or text
     topic = user_prompt.strip() if user_prompt else "Document Summary"
     topic_title = topic[:45] + "..." if len(topic) > 45 else topic
+
+    clean_query = clean_image_query(topic)
 
     all_slides = [
         {
@@ -32,7 +51,7 @@ def rule_based_fallback(text, user_prompt=None, requested_count=None):
                 "Primary objectives and scope of the presentation."
             ],
             "icon_suggestions": ["rocket", "lightbulb", "compass"],
-            "image_search_prompt": f"introducing {topic_title} concept",
+            "image_search_prompt": clean_query,
         },
         {
             "title": "Core Strategic Pillars",
@@ -153,9 +172,15 @@ def rule_based_fallback(text, user_prompt=None, requested_count=None):
         "slides": all_slides
     }
 
-def generate_slides(text, user_prompt=None):
+def generate_slides(text, user_prompt=None, slide_count=None):
     requested_count = None
-    if user_prompt:
+    if slide_count is not None:
+        try:
+            requested_count = int(slide_count)
+        except Exception:
+            pass
+            
+    if not requested_count and user_prompt:
         num_word_map = {"one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9, "ten": 10}
         match = re.search(r'\b(\d+)\s*-?\s*slides?\b', user_prompt.lower())
         if match:
@@ -280,22 +305,30 @@ def generate_slides(text, user_prompt=None):
 
 if __name__ == "__main__":
     if len(sys.argv) < 2:
-        print(json.dumps([]))
-        sys.exit(0)
+        if not sys.stdin.isatty():
+            input_arg = sys.stdin.read()
+        else:
+            print(json.dumps([]))
+            sys.exit(0)
+    elif sys.argv[1] == "-":
+        input_arg = sys.stdin.read()
+    else:
+        input_arg = sys.argv[1]
 
-    input_arg = sys.argv[1]
     text = ""
     prompt_text = None
 
+    slide_count = None
     try:
         data = json.loads(input_arg)
         if isinstance(data, dict):
             text = data.get("text", "")
             prompt_text = data.get("prompt", None)
+            slide_count = data.get("slide_count", None)
         else:
             text = input_arg
     except Exception:
         text = input_arg
 
-    result = generate_slides(text, prompt_text)
+    result = generate_slides(text, prompt_text, slide_count)
     print(json.dumps(result))

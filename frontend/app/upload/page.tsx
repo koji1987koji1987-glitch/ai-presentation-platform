@@ -9,10 +9,13 @@ export default function UploadPage() {
     const [promptText, setPromptText] = useState("");
     const [isGenerating, setIsGenerating] = useState(false);
     const [errorMsg, setErrorMsg] = useState("");
+    const [showPromptModal, setShowPromptModal] = useState(false);
+    const [slideCount, setSlideCount] = useState(7);
+    const [abortController, setAbortController] = useState<AbortController | null>(null);
 
     const router = useRouter();
 
-    async function generatePresentation() {
+    async function generatePresentation(countToUse = slideCount) {
         if (!file && !promptText.trim()) {
             setErrorMsg("Please upload a file or write a text prompt first.");
             return;
@@ -20,6 +23,9 @@ export default function UploadPage() {
 
         setIsGenerating(true);
         setErrorMsg("");
+
+        const controller = new AbortController();
+        setAbortController(controller);
 
         try {
             const formData = new FormData();
@@ -33,10 +39,12 @@ export default function UploadPage() {
                     localStorage.setItem("uploadedFile", "Prompt Outline.pdf");
                 }
             }
+            formData.append("slideCount", countToUse.toString());
 
             const response = await fetch("/api/upload", {
                 method: "POST",
                 body: formData,
+                signal: controller.signal
             });
 
             if (!response.ok) {
@@ -54,14 +62,28 @@ export default function UploadPage() {
                 localStorage.setItem("slides", JSON.stringify(responseData));
             }
             router.push("/presentation");
-        } catch (error) {
+        } catch (error: any) {
+            if (error.name === "AbortError") {
+                console.log("Generation aborted by user");
+                return;
+            }
             const err = error as Error;
             console.error("Generation failed:", err);
             setErrorMsg(err.message || "Something went wrong during generation.");
         } finally {
             setIsGenerating(false);
+            setAbortController(null);
         }
     }
+
+    const handleStop = () => {
+        if (abortController) {
+            abortController.abort();
+            setIsGenerating(false);
+            setAbortController(null);
+            setErrorMsg("Generation was stopped by the user.");
+        }
+    };
 
     return (
         <div style={{
@@ -261,25 +283,234 @@ export default function UploadPage() {
                 </div>
             )}
 
-            <button
-                onClick={generatePresentation}
-                disabled={isGenerating || (!file && !promptText.trim())}
-                style={{
-                    backgroundColor: isGenerating ? "#475569" : "#4f46e5",
-                    backgroundImage: isGenerating ? "none" : "linear-gradient(to right, #6366f1, #a855f7)",
-                    color: "#ffffff",
-                    padding: "16px 48px",
-                    fontSize: "1.1rem",
-                    fontWeight: 700,
-                    borderRadius: "12px",
-                    border: "none",
-                    cursor: (isGenerating || (!file && !promptText.trim())) ? "not-allowed" : "pointer",
-                    boxShadow: "0 10px 15px -3px rgba(99, 102, 241, 0.3)",
-                    transition: "all 0.2s ease"
-                }}
-            >
-                {isGenerating ? "Analyzing & Structuring Presentation..." : "Generate Presentation"}
-            </button>
+            {isGenerating ? (
+                <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "16px" }}>
+                    <div style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "12px",
+                        backgroundColor: "#1e293b",
+                        border: "1px solid #334155",
+                        borderRadius: "16px",
+                        padding: "16px 32px",
+                        boxShadow: "0 10px 25px -5px rgba(0,0,0,0.3)"
+                    }}>
+                        <div className="spinner" style={{
+                            width: "24px",
+                            height: "24px",
+                            border: "3px solid rgba(99,102,241,0.2)",
+                            borderTop: "3px solid #6366f1",
+                            borderRadius: "50%",
+                            animation: "spin 1s linear infinite"
+                        }} />
+                        <span style={{ fontSize: "1.1rem", fontWeight: 600, color: "#e2e8f0" }}>
+                            Generating {slideCount} Slide Presentation...
+                        </span>
+                    </div>
+                    <button
+                        onClick={handleStop}
+                        style={{
+                            backgroundColor: "#ef4444",
+                            color: "#ffffff",
+                            padding: "10px 24px",
+                            fontSize: "0.95rem",
+                            fontWeight: 700,
+                            borderRadius: "10px",
+                            border: "none",
+                            cursor: "pointer",
+                            transition: "all 0.2s ease",
+                            boxShadow: "0 4px 10px rgba(239,68,68,0.3)"
+                        }}
+                    >
+                        🛑 Stop Generation
+                    </button>
+                    <style jsx global>{`
+                        @keyframes spin {
+                            0% { transform: rotate(0deg); }
+                            100% { transform: rotate(360deg); }
+                        }
+                    `}</style>
+                </div>
+            ) : (
+                <button
+                    onClick={() => {
+                        if (!file && !promptText.trim()) {
+                            setErrorMsg("Please upload a file or write a text prompt first.");
+                            return;
+                        }
+                        setShowPromptModal(true);
+                    }}
+                    disabled={(!file && !promptText.trim())}
+                    style={{
+                        backgroundColor: "#4f46e5",
+                        backgroundImage: "linear-gradient(to right, #6366f1, #a855f7)",
+                        color: "#ffffff",
+                        padding: "16px 48px",
+                        fontSize: "1.1rem",
+                        fontWeight: 700,
+                        borderRadius: "12px",
+                        border: "none",
+                        cursor: (!file && !promptText.trim()) ? "not-allowed" : "pointer",
+                        boxShadow: "0 10px 15px -3px rgba(99, 102, 241, 0.3)",
+                        transition: "all 0.2s ease"
+                    }}
+                >
+                    Generate Presentation
+                </button>
+            )}
+
+            {showPromptModal && (
+                <div style={{
+                    position: "fixed",
+                    top: 0,
+                    left: 0,
+                    right: 0,
+                    bottom: 0,
+                    backgroundColor: "rgba(15, 23, 42, 0.85)",
+                    backdropFilter: "blur(8px)",
+                    display: "flex",
+                    alignItems: "center",
+                    justifyContent: "center",
+                    zIndex: 9999
+                }}>
+                    <div style={{
+                        backgroundColor: "#1e293b",
+                        border: "1.5px solid #334155",
+                        borderRadius: "24px",
+                        padding: "40px",
+                        maxWidth: "480px",
+                        width: "90%",
+                        boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.5)",
+                        textAlign: "center",
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "24px"
+                    }}>
+                        <div>
+                            <h3 style={{ fontSize: "1.6rem", fontWeight: 800, color: "#f8fafc", margin: "0 0 8px 0" }}>
+                                Customize Slide Count
+                            </h3>
+                            <p style={{ fontSize: "0.95rem", color: "#94a3b8", margin: 0, lineHeight: 1.5 }}>
+                                Specify how many slides you want the AI to create for this presentation.
+                            </p>
+                        </div>
+
+                        <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "12px" }}>
+                            <div style={{ display: "flex", alignItems: "center", gap: "16px" }}>
+                                <button
+                                    onClick={() => setSlideCount(prev => Math.max(3, prev - 1))}
+                                    style={{
+                                        backgroundColor: "#334155",
+                                        color: "#f8fafc",
+                                        border: "none",
+                                        width: "44px",
+                                        height: "44px",
+                                        borderRadius: "50%",
+                                        fontSize: "1.5rem",
+                                        fontWeight: "bold",
+                                        cursor: "pointer",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        transition: "all 0.2s ease"
+                                    }}
+                                >
+                                    -
+                                </button>
+                                <input
+                                    type="number"
+                                    min={3}
+                                    max={20}
+                                    value={slideCount}
+                                    onChange={(e) => {
+                                        const val = parseInt(e.target.value, 10);
+                                        if (!isNaN(val)) {
+                                            setSlideCount(Math.max(2, Math.min(25, val)));
+                                        }
+                                    }}
+                                    style={{
+                                        width: "80px",
+                                        height: "48px",
+                                        backgroundColor: "#0f172a",
+                                        border: "1.5px solid #475569",
+                                        borderRadius: "12px",
+                                        color: "#f8fafc",
+                                        fontSize: "1.4rem",
+                                        fontWeight: 800,
+                                        textAlign: "center",
+                                        outline: "none"
+                                    }}
+                                />
+                                <button
+                                    onClick={() => setSlideCount(prev => Math.min(20, prev + 1))}
+                                    style={{
+                                        backgroundColor: "#334155",
+                                        color: "#f8fafc",
+                                        border: "none",
+                                        width: "44px",
+                                        height: "44px",
+                                        borderRadius: "50%",
+                                        fontSize: "1.5rem",
+                                        fontWeight: "bold",
+                                        cursor: "pointer",
+                                        display: "flex",
+                                        alignItems: "center",
+                                        justifyContent: "center",
+                                        transition: "all 0.2s ease"
+                                    }}
+                                >
+                                    +
+                                </button>
+                            </div>
+                            <span style={{ fontSize: "0.85rem", color: "#64748b" }}>
+                                Recommended: 5 - 15 slides
+                            </span>
+                        </div>
+
+                        <div style={{ display: "flex", gap: "12px" }}>
+                            <button
+                                onClick={() => setShowPromptModal(false)}
+                                style={{
+                                    flex: 1,
+                                    backgroundColor: "transparent",
+                                    border: "1.5px solid #334155",
+                                    color: "#94a3b8",
+                                    padding: "12px",
+                                    fontSize: "0.95rem",
+                                    fontWeight: 600,
+                                    borderRadius: "12px",
+                                    cursor: "pointer",
+                                    transition: "all 0.2s ease"
+                                }}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                onClick={() => {
+                                    setShowPromptModal(false);
+                                    generatePresentation();
+                                }}
+                                style={{
+                                    flex: 1,
+                                    backgroundColor: "#4f46e5",
+                                    backgroundImage: "linear-gradient(to right, #6366f1, #a855f7)",
+                                    border: "none",
+                                    color: "#ffffff",
+                                    padding: "12px",
+                                    fontSize: "0.95rem",
+                                    fontWeight: 700,
+                                    borderRadius: "12px",
+                                    cursor: "pointer",
+                                    boxShadow: "0 4px 12px rgba(99, 102, 241, 0.3)",
+                                    transition: "all 0.2s ease"
+                                }}
+                            >
+                                Start Generating
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }
