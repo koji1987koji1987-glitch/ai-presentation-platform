@@ -174,11 +174,12 @@ app.post("/api/upload", upload.single("file"), async (req, res) => {
               const data = (await unsplashRes.json()) as any;
               const photos = data.results || [];
               if (photos.length > 0) {
+                const isMultiColumn = ["two_column", "timeline", "comparison", "cards", "process_flow", "statistics"].includes(slide.layout_type);
                 slide.image = {
                   url: photos[0].urls?.regular || photos[0].urls?.small || "",
                   keyword: keyword,
                   width: 100,
-                  position: "right"
+                  position: isMultiColumn ? "top" : "right"
                 };
               }
             }
@@ -259,7 +260,11 @@ app.post("/api/export", async (req, res) => {
       };
 
       // Calculate layout coordinates based on image position
-      const hasSideImage = slide.image && (slide.image.position === "left" || slide.image.position === "right") && slide.image.url;
+      const isMultiColumnLayout = ["two_column", "timeline", "comparison", "cards", "process_flow", "statistics"].includes(slide.layout_type);
+      const hasSideImage = !!(slide.image && 
+                             (slide.image.position === "left" || slide.image.position === "right") && 
+                             slide.image.url && 
+                             !isMultiColumnLayout);
       const imgPos = slide.image?.position;
       
       let contentX = 0.8;
@@ -316,25 +321,26 @@ app.post("/api/export", async (req, res) => {
       const layout = slide.layout_type;
 
       if (layout === "title") {
-        // Main centered title slide
+        // Left-align and place on side column if side image is present to prevent overlapping
+        const titleAlign = hasSideImage ? ("left" as const) : ("center" as const);
         pptxSlide.addText(slide.title, {
-          x: 1.0,
+          x: hasSideImage ? contentX : 1.0,
           y: 2.2,
-          w: 8.0,
+          w: hasSideImage ? contentW : 8.0,
           h: 1.2,
           fontSize: 40,
           bold: true,
-          align: "center",
+          align: titleAlign,
           color: colors.text
         });
         if (slide.subtitle) {
           pptxSlide.addText(slide.subtitle, {
-            x: 1.0,
+            x: hasSideImage ? contentX : 1.0,
             y: 3.5,
-            w: 8.0,
+            w: hasSideImage ? contentW : 8.0,
             h: 0.5,
             fontSize: 18,
-            align: "center",
+            align: titleAlign,
             color: colors.muted
           });
         }

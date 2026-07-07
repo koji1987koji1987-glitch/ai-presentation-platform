@@ -1124,11 +1124,12 @@ export default function PresentationPage() {
                             const slideBulletBg = isDark ? "rgba(255, 255, 255, 0.1)" : colors.accentLight;
                             const slideBulletBorder = isDark ? "rgba(255, 255, 255, 0.3)" : colors.accent;
                             const slideBulletColor = isDark ? "#f8fafc" : colors.accent;
+                            const isMultiColumnLayout = ["two_column", "timeline", "comparison", "cards", "process_flow", "statistics"].includes(slide.layout_type);
                             const showSideImage = !!(slide.image && 
                                 (slide.image.position === "left" || slide.image.position === "right") && 
                                 slide.image.url && 
-                                slide.layout_type !== "title" && 
-                                slide.layout_type !== "image_text");
+                                slide.layout_type !== "image_text" &&
+                                !isMultiColumnLayout);
                             const imagePos = slide.image?.position;
 
                             return (
@@ -1250,8 +1251,9 @@ export default function PresentationPage() {
                                             const currentLayout = slide.layout_type || "bullet_list";
 
                                             if (currentLayout === "title") {
+                                                const titleAlign = showSideImage ? "left" : "center";
                                                 return (
-                                                    <div style={{ display: "flex", flexDirection: "column", alignItems: "center", justifyContent: "center", width: "100%", minHeight: "260px", textAlign: "center" }}>
+                                                    <div style={{ display: "flex", flexDirection: "column", alignItems: showSideImage ? "flex-start" : "center", justifyContent: "center", width: "100%", minHeight: "260px", textAlign: titleAlign }}>
                                                         <AutoGrowingTextarea
                                                             value={slide.subtitle || ""}
                                                             onChange={(val) => handleUpdateSubtitle(index, val)}
@@ -1261,15 +1263,15 @@ export default function PresentationPage() {
                                                                 color: slideMutedColor,
                                                                 backgroundColor: "transparent",
                                                                 border: "none",
-                                                                textAlign: "center",
+                                                                textAlign: titleAlign,
                                                                 outline: "none",
                                                                 width: "80%",
                                                                 marginBottom: "12px",
                                                                 fontStyle: "italic"
                                                             }}
                                                         />
-                                                        <div style={{ width: "60px", height: "4px", backgroundColor: colors.accent, borderRadius: "2px", margin: "16px 0" }} />
-                                                        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", justifyContent: "center", marginTop: "10px" }}>
+                                                        <div style={{ width: "60px", height: "4px", backgroundColor: colors.accent, borderRadius: "2px", margin: showSideImage ? "16px 0" : "16px auto" }} />
+                                                        <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", justifyContent: showSideImage ? "flex-start" : "center", marginTop: "10px" }}>
                                                             {slide.content.map((point, i) => (
                                                                 <div key={i} style={{ fontSize: "0.95rem", color: slideTextColor }}>
                                                                     {point}
