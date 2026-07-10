@@ -174,7 +174,7 @@ app.post("/api/upload", upload.single("file"), async (req, res) => {
               const data = (await unsplashRes.json()) as any;
               const photos = data.results || [];
               if (photos.length > 0) {
-                const isMultiColumn = ["two_column", "timeline", "comparison", "cards", "process_flow", "statistics"].includes(slide.layout_type);
+                const isMultiColumn = ["two_column", "timeline", "comparison", "cards", "process_flow", "statistics"].includes(slide.layout_type ?? "");
                 slide.image = {
                   url: photos[0].urls?.regular || photos[0].urls?.small || "",
                   keyword: keyword,
@@ -260,7 +260,7 @@ app.post("/api/export", async (req, res) => {
       };
 
       // Calculate layout coordinates based on image position
-      const isMultiColumnLayout = ["two_column", "timeline", "comparison", "cards", "process_flow", "statistics"].includes(slide.layout_type);
+      const isMultiColumnLayout = ["two_column", "timeline", "comparison", "cards", "process_flow", "statistics"].includes(slide.layout_type ?? "");
       const hasSideImage = !!(slide.image && 
                              (slide.image.position === "left" || slide.image.position === "right") && 
                              slide.image.url && 

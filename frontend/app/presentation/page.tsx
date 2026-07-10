@@ -1124,7 +1124,7 @@ export default function PresentationPage() {
                             const slideBulletBg = isDark ? "rgba(255, 255, 255, 0.1)" : colors.accentLight;
                             const slideBulletBorder = isDark ? "rgba(255, 255, 255, 0.3)" : colors.accent;
                             const slideBulletColor = isDark ? "#f8fafc" : colors.accent;
-                            const isMultiColumnLayout = ["two_column", "timeline", "comparison", "cards", "process_flow", "statistics"].includes(slide.layout_type);
+                            const isMultiColumnLayout = ["two_column", "timeline", "comparison", "cards", "process_flow", "statistics"].includes(slide.layout_type ?? "");
                             const showSideImage = !!(slide.image && 
                                 (slide.image.position === "left" || slide.image.position === "right") && 
                                 slide.image.url && 
