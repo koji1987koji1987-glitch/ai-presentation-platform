@@ -265,8 +265,13 @@ export default function PresentationPage() {
         try {
             const res = await fetch(`/api/images?query=${encodeURIComponent(keyword || slides[slideIndex].title || "presentation")}`);
             if (res.ok) {
-                const data = await res.json();
-                setSearchResults(data);
+                const text = await res.text();
+                try {
+                    const data = JSON.parse(text);
+                    setSearchResults(data);
+                } catch (e) {
+                    console.error("Failed to parse search results as JSON:", e);
+                }
             }
         } catch (err) {
             console.error("Failed to load search results:", err);
@@ -281,8 +286,13 @@ export default function PresentationPage() {
         try {
             const res = await fetch(`/api/images?query=${encodeURIComponent(searchQuery)}`);
             if (res.ok) {
-                const data = await res.json();
-                setSearchResults(data);
+                const text = await res.text();
+                try {
+                    const data = JSON.parse(text);
+                    setSearchResults(data);
+                } catch (e) {
+                    console.error("Failed to parse search results as JSON:", e);
+                }
             }
         } catch (err) {
             console.error("Failed to search photos:", err);
@@ -682,7 +692,13 @@ export default function PresentationPage() {
             });
 
             if (!response.ok) {
-                const errorData = await response.json();
+                const errText = await response.text();
+                let errorData: any = {};
+                try {
+                    errorData = JSON.parse(errText);
+                } catch {
+                    errorData = { error: errText || "Failed to export presentation" };
+                }
                 throw new Error(errorData.details || errorData.error || "Failed to export presentation");
             }
 

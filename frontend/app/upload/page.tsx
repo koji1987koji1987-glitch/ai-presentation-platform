@@ -47,12 +47,17 @@ export default function UploadPage() {
                 signal: controller.signal
             });
 
-            if (!response.ok) {
-                const errData = await response.json();
-                throw new Error(errData.error || "Failed to generate presentation");
+            const responseText = await response.text();
+            let responseData: any = {};
+            try {
+                responseData = JSON.parse(responseText);
+            } catch {
+                responseData = { error: responseText || "Failed to generate presentation" };
             }
 
-            const responseData = await response.json();
+            if (!response.ok) {
+                throw new Error(responseData.error || "Failed to generate presentation");
+            }
             if (responseData && typeof responseData === "object" && "slides" in responseData) {
                 localStorage.setItem("slides", JSON.stringify(responseData.slides));
                 if (responseData.theme) {
