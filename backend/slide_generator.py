@@ -261,13 +261,49 @@ def generate_slides(text, user_prompt=None, slide_count=None):
             print("GEMINI_API_KEY found. Generating presentation via gemini-2.5-flash...", file=sys.stderr)
             from google import genai
             from google.genai import types
+            from pydantic import BaseModel
+            from typing import List, Optional, Literal
+
+            class ChartData(BaseModel):
+                type: Literal["bar", "line", "pie"]
+                labels: List[str]
+                values: List[float]
+                title: Optional[str] = None
+
+            class TimelineItem(BaseModel):
+                label: str
+                detail: Optional[str] = None
+
+            class ComparisonTable(BaseModel):
+                headers: List[str]
+                rows: List[List[str]]
+
+            class Slide(BaseModel):
+                title: str
+                subtitle: Optional[str] = None
+                layout_type: Literal[
+                    "title", "bullet_list", "two_column", "timeline",
+                    "comparison", "cards", "process_flow", "statistics",
+                    "image_text", "quote"
+                ]
+                content: List[str]
+                icon_suggestions: Optional[List[str]] = None
+                image_search_prompt: Optional[str] = None
+                chart_data: Optional[ChartData] = None
+                timeline_data: Optional[List[TimelineItem]] = None
+                comparison_table: Optional[ComparisonTable] = None
+
+            class Presentation(BaseModel):
+                theme: Literal["slate", "dark", "indigo", "emerald", "sakura", "cobalt"]
+                slides: List[Slide]
 
             client = genai.Client(api_key=gemini_key)
             response = client.models.generate_content(
                 model='gemini-2.5-flash',
                 contents=prompt,
                 config=types.GenerateContentConfig(
-                    response_mime_type="application/json"
+                    response_mime_type="application/json",
+                    response_schema=Presentation
                 )
             )
             data = json.loads(response.text)
