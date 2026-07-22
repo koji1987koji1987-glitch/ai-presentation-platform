@@ -191,7 +191,7 @@ export default function PresentationPage() {
     const [slides, setSlides] = useState<Slide[]>([]);
     const [isExporting, setIsExporting] = useState(false);
     const [activeTheme, setActiveTheme] = useState<ThemeKey>("slate");
-    const [activeSlideIndex, setActiveSlideIndex] = useState(0);
+    const [activeSlideIndex, setActiveSlideIndex] = useState<number | null>(0);
 
     type UnsplashPhoto = {
         id: string;
@@ -968,7 +968,12 @@ export default function PresentationPage() {
                     </p>
                 </div>
             ) : (
-                <div className="editor-container">
+                <div className="editor-container" style={{
+                    display: "grid",
+                    gridTemplateColumns: activeSlideIndex !== null ? "240px 1fr 340px" : "240px 1fr",
+                    gap: "24px",
+                    alignItems: "start"
+                }}>
                     {/* Left Column: Slide Outline Sidebar (Gamma.app style) */}
                     <div className="no-print" style={{
                         position: "sticky",
@@ -1622,317 +1627,7 @@ export default function PresentationPage() {
                                     )}
                                 </div>
 
-                                {/* Slide Customization Panel (Gamma style) */}
-                                {activeSlideIndex === index && (
-                                    <div className="no-print" style={{
-                                        marginTop: "32px",
-                                        paddingTop: "24px",
-                                        borderTop: `1px solid ${slideBorderColor}`,
-                                        display: "flex",
-                                        flexDirection: "column",
-                                        gap: "20px"
-                                    }}>
-                                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))", gap: "16px" }}>
-                                            {/* Layout Type Switcher */}
-                                            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                                                <span style={{ fontSize: "0.75rem", fontWeight: 800, color: slideMutedColor, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                                                    Slide Layout
-                                                </span>
-                                                <select
-                                                    value={slide.layout_type || "bullet_list"}
-                                                    onChange={(e) => handleUpdateLayoutType(index, e.target.value as any)}
-                                                    style={{
-                                                        padding: "8px 12px",
-                                                        fontSize: "0.85rem",
-                                                        borderRadius: "8px",
-                                                        backgroundColor: colors.cardBg,
-                                                        color: colors.text,
-                                                        border: `1.5px solid ${slideBorderColor}`,
-                                                        outline: "none"
-                                                    }}
-                                                >
-                                                    <option value="title">Title Slide</option>
-                                                    <option value="bullet_list">Bullet List</option>
-                                                    <option value="two_column">Two Column</option>
-                                                    <option value="timeline">Timeline</option>
-                                                    <option value="comparison">Comparison Table</option>
-                                                    <option value="cards">Cards Grid</option>
-                                                    <option value="process_flow">Process Flow</option>
-                                                    <option value="statistics">Statistics & Chart</option>
-                                                    <option value="image_text">Image + Text</option>
-                                                    <option value="quote">Quote Block</option>
-                                                </select>
-                                            </div>
 
-                                            {/* Subtitle Input */}
-                                            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                                                <span style={{ fontSize: "0.75rem", fontWeight: 800, color: slideMutedColor, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                                                    Slide Subtitle
-                                                </span>
-                                                <input
-                                                    type="text"
-                                                    value={slide.subtitle || ""}
-                                                    onChange={(e) => handleUpdateSubtitle(index, e.target.value)}
-                                                    placeholder="Sub-heading or details..."
-                                                    style={{
-                                                        padding: "8px 12px",
-                                                        fontSize: "0.85rem",
-                                                        borderRadius: "8px",
-                                                        backgroundColor: colors.cardBg,
-                                                        color: colors.text,
-                                                        border: `1.5px solid ${slideBorderColor}`,
-                                                        outline: "none"
-                                                    }}
-                                                />
-                                            </div>
-
-                                            {/* Image keyword lookup */}
-                                            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                                                <span style={{ fontSize: "0.75rem", fontWeight: 800, color: slideMutedColor, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                                                    Image Keyword
-                                                </span>
-                                                <div style={{ display: "flex", gap: "6px" }}>
-                                                    <input
-                                                        type="text"
-                                                        value={slide.image_search_prompt || slide.image_keyword || ""}
-                                                        onChange={(e) => handleUpdateImageSearchPrompt(index, e.target.value)}
-                                                        placeholder="Unsplash query keyword..."
-                                                        style={{
-                                                            padding: "8px 12px",
-                                                            fontSize: "0.85rem",
-                                                            borderRadius: "8px",
-                                                            backgroundColor: colors.cardBg,
-                                                            color: colors.text,
-                                                            border: `1.5px solid ${slideBorderColor}`,
-                                                            outline: "none",
-                                                            flexGrow: 1
-                                                        }}
-                                                    />
-                                                    <button
-                                                        onClick={() => openImageSearch(index, slide.image_search_prompt || slide.image_keyword || "")}
-                                                        style={{
-                                                            padding: "8px 12px",
-                                                            fontSize: "0.85rem",
-                                                            backgroundColor: colors.accent,
-                                                            color: "white",
-                                                            border: "none",
-                                                            borderRadius: "8px",
-                                                            fontWeight: "bold",
-                                                            cursor: "pointer"
-                                                        }}
-                                                    >
-                                                        Search
-                                                    </button>
-                                                </div>
-                                            </div>
-
-                                            {/* Icon suggestion tags */}
-                                            <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                                                <span style={{ fontSize: "0.75rem", fontWeight: 800, color: slideMutedColor, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                                                    Icon Suggestions
-                                                </span>
-                                                <input
-                                                    type="text"
-                                                    value={(slide.icon_suggestions || []).join(", ")}
-                                                    onChange={(e) => handleUpdateIconSuggestions(index, e.target.value)}
-                                                    placeholder="rocket, lightbulb, smile..."
-                                                    style={{
-                                                        padding: "8px 12px",
-                                                        fontSize: "0.85rem",
-                                                        borderRadius: "8px",
-                                                        backgroundColor: colors.cardBg,
-                                                        color: colors.text,
-                                                        border: `1.5px solid ${slideBorderColor}`,
-                                                        outline: "none"
-                                                    }}
-                                                />
-                                            </div>
-                                        </div>
-
-                                        {/* Dynamic Specific Layout Editors */}
-                                        {slide.layout_type === "timeline" && (
-                                            <div style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "16px", backgroundColor: "rgba(0,0,0,0.02)", borderRadius: "12px", border: `1px solid ${slideBorderColor}` }}>
-                                                <span style={{ fontSize: "0.8rem", fontWeight: 800, color: colors.accent }}>📅 Edit Timeline Phases</span>
-                                                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-                                                    {(slide.timeline_data || []).map((item, itemIdx) => (
-                                                        <div key={itemIdx} style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                                                            <input
-                                                                type="text"
-                                                                value={item.label}
-                                                                onChange={(e) => handleUpdateTimelineItem(index, itemIdx, "label", e.target.value)}
-                                                                placeholder="Phase/Milestone Label"
-                                                                style={{ padding: "6px 10px", fontSize: "0.8rem", borderRadius: "6px", backgroundColor: colors.cardBg, color: colors.text, border: `1px solid ${slideBorderColor}`, width: "150px" }}
-                                                            />
-                                                            <input
-                                                                type="text"
-                                                                value={item.detail || ""}
-                                                                onChange={(e) => handleUpdateTimelineItem(index, itemIdx, "detail", e.target.value)}
-                                                                placeholder="Details..."
-                                                                style={{ padding: "6px 10px", fontSize: "0.8rem", borderRadius: "6px", backgroundColor: colors.cardBg, color: colors.text, border: `1px solid ${slideBorderColor}`, flexGrow: 1 }}
-                                                            />
-                                                            <button onClick={() => handleDeleteTimelineItem(index, itemIdx)} style={{ border: "none", background: "none", color: "#ef4444", cursor: "pointer", fontSize: "1.1rem" }}>×</button>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                                <button onClick={() => handleAddTimelineItem(index)} style={{ padding: "6px 12px", fontSize: "0.8rem", borderRadius: "6px", backgroundColor: colors.accentLight, color: colors.accent, border: "none", cursor: "pointer", fontWeight: "bold", width: "max-content", marginTop: "8px" }}>+ Add Milestone</button>
-                                            </div>
-                                        )}
-
-                                        {slide.layout_type === "comparison" && (
-                                            <div style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "16px", backgroundColor: "rgba(0,0,0,0.02)", borderRadius: "12px", border: `1px solid ${slideBorderColor}` }}>
-                                                <span style={{ fontSize: "0.8rem", fontWeight: 800, color: colors.accent }}>⚖️ Edit Comparison Matrix</span>
-                                                <div style={{ display: "flex", flexDirection: "column", gap: "8px", overflowX: "auto" }}>
-                                                    {/* Table headers */}
-                                                    <div style={{ display: "flex", gap: "8px" }}>
-                                                        {(slide.comparison_table?.headers || []).map((h, colIdx) => (
-                                                            <input
-                                                                key={colIdx}
-                                                                type="text"
-                                                                value={h}
-                                                                onChange={(e) => handleUpdateComparisonHeader(index, colIdx, e.target.value)}
-                                                                style={{ padding: "6px 10px", fontSize: "0.8rem", fontWeight: "bold", borderRadius: "6px", backgroundColor: colors.accentLight, color: colors.accent, border: `1px solid ${slideBorderColor}`, width: "120px" }}
-                                                            />
-                                                        ))}
-                                                    </div>
-                                                    {/* Table rows */}
-                                                    {(slide.comparison_table?.rows || []).map((row, rIdx) => (
-                                                        <div key={rIdx} style={{ display: "flex", gap: "8px", alignItems: "center" }}>
-                                                            {row.map((cell, cIdx) => (
-                                                                <input
-                                                                    key={cIdx}
-                                                                    type="text"
-                                                                    value={cell}
-                                                                    onChange={(e) => handleUpdateComparisonCell(index, rIdx, cIdx, e.target.value)}
-                                                                    style={{ padding: "6px 10px", fontSize: "0.8rem", borderRadius: "6px", backgroundColor: colors.cardBg, color: colors.text, border: `1px solid ${slideBorderColor}`, width: "120px" }}
-                                                                />
-                                                            ))}
-                                                            <button onClick={() => handleDeleteComparisonRow(index, rIdx)} style={{ border: "none", background: "none", color: "#ef4444", cursor: "pointer", fontSize: "1.1rem" }}>×</button>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                                <button onClick={() => handleAddComparisonRow(index)} style={{ padding: "6px 12px", fontSize: "0.8rem", borderRadius: "6px", backgroundColor: colors.accentLight, color: colors.accent, border: "none", cursor: "pointer", fontWeight: "bold", width: "max-content", marginTop: "8px" }}>+ Add Compare Row</button>
-                                            </div>
-                                        )}
-
-                                        {slide.layout_type === "statistics" && (
-                                            <div style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "16px", backgroundColor: "rgba(0,0,0,0.02)", borderRadius: "12px", border: `1px solid ${slideBorderColor}` }}>
-                                                <span style={{ fontSize: "0.8rem", fontWeight: 800, color: colors.accent }}>📊 Edit Statistics & Chart Data</span>
-                                                <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "center" }}>
-                                                    <input
-                                                        type="text"
-                                                        value={slide.chart_data?.title || ""}
-                                                        onChange={(e) => handleUpdateChartData(index, "title", e.target.value)}
-                                                        placeholder="Chart Title"
-                                                        style={{ padding: "6px 10px", fontSize: "0.8rem", borderRadius: "6px", backgroundColor: colors.cardBg, color: colors.text, border: `1px solid ${slideBorderColor}`, width: "200px" }}
-                                                    />
-                                                    <select
-                                                        value={slide.chart_data?.type || "bar"}
-                                                        onChange={(e) => handleUpdateChartData(index, "type", e.target.value)}
-                                                        style={{ padding: "6px 10px", fontSize: "0.8rem", borderRadius: "6px", backgroundColor: colors.cardBg, color: colors.text, border: `1px solid ${slideBorderColor}` }}
-                                                    >
-                                                        <option value="bar">Bar Chart</option>
-                                                        <option value="line">Line Chart</option>
-                                                        <option value="pie">Pie Chart</option>
-                                                    </select>
-                                                </div>
-                                                <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "8px" }}>
-                                                    {slide.chart_data?.labels.map((lbl, lblIdx) => (
-                                                        <div key={lblIdx} style={{ display: "flex", gap: "10px", alignItems: "center" }}>
-                                                            <input
-                                                                type="text"
-                                                                value={lbl}
-                                                                onChange={(e) => handleUpdateChartItem(index, lblIdx, "label", e.target.value)}
-                                                                placeholder="Label (e.g., Q1)"
-                                                                style={{ padding: "6px 10px", fontSize: "0.8rem", borderRadius: "6px", backgroundColor: colors.cardBg, color: colors.text, border: `1px solid ${slideBorderColor}`, width: "120px" }}
-                                                            />
-                                                            <input
-                                                                type="number"
-                                                                value={slide.chart_data?.values[lblIdx] || 0}
-                                                                onChange={(e) => handleUpdateChartItem(index, lblIdx, "value", e.target.value)}
-                                                                placeholder="Value (e.g., 85)"
-                                                                style={{ padding: "6px 10px", fontSize: "0.8rem", borderRadius: "6px", backgroundColor: colors.cardBg, color: colors.text, border: `1px solid ${slideBorderColor}`, width: "80px" }}
-                                                            />
-                                                            <button onClick={() => handleDeleteChartItem(index, lblIdx)} style={{ border: "none", background: "none", color: "#ef4444", cursor: "pointer", fontSize: "1.1rem" }}>×</button>
-                                                        </div>
-                                                    ))}
-                                                </div>
-                                                <button onClick={() => handleAddChartItem(index)} style={{ padding: "6px 12px", fontSize: "0.8rem", borderRadius: "6px", backgroundColor: colors.accentLight, color: colors.accent, border: "none", cursor: "pointer", fontWeight: "bold", width: "max-content", marginTop: "8px" }}>+ Add Chart Item</button>
-                                            </div>
-                                        )}
-
-                                        {/* Background Styling Preset Section */}
-                                        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-                                            <span style={{ fontSize: "0.75rem", fontWeight: 800, color: slideMutedColor, textTransform: "uppercase", letterSpacing: "0.05em" }}>
-                                                Background Styling
-                                            </span>
-                                            <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                                                <button
-                                                    onClick={() => handleUpdateSlideBackground(index, "", "theme")}
-                                                    style={{
-                                                        width: "28px",
-                                                        height: "28px",
-                                                        borderRadius: "50%",
-                                                        border: `2px solid ${(!slide.custom_bg || slide.custom_bg_type === "theme") ? colors.accent : slideBorderColor}`,
-                                                        background: colors.cardBg,
-                                                        cursor: "pointer",
-                                                        position: "relative",
-                                                        transition: "all 0.2s"
-                                                    }}
-                                                    title="Theme Default"
-                                                >
-                                                    <span style={{ fontSize: "0.6rem", color: colors.text, position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</span>
-                                                </button>
-
-                                                {BACKGROUND_PRESETS.map((preset) => {
-                                                    const isSelected = slide.custom_bg === preset.value && slide.custom_bg_type === preset.type;
-                                                    return (
-                                                        <button
-                                                            key={preset.name}
-                                                            onClick={() => handleUpdateSlideBackground(index, preset.value, preset.type)}
-                                                            style={{
-                                                                width: "28px",
-                                                                height: "28px",
-                                                                borderRadius: "50%",
-                                                                border: `2px solid ${isSelected ? colors.accent : slideBorderColor}`,
-                                                                background: preset.value,
-                                                                cursor: "pointer",
-                                                                transition: "all 0.2s"
-                                                            }}
-                                                            title={preset.name}
-                                                        />
-                                                    );
-                                                })}
-
-                                                <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
-                                                    <input
-                                                        type="color"
-                                                        value={slide.custom_bg_type === "solid" && slide.custom_bg?.startsWith("#") ? slide.custom_bg : "#ffffff"}
-                                                        onChange={(e) => handleUpdateSlideBackground(index, e.target.value, "solid")}
-                                                        style={{
-                                                            opacity: 0,
-                                                            position: "absolute",
-                                                            inset: 0,
-                                                            width: "28px",
-                                                            height: "28px",
-                                                            cursor: "pointer",
-                                                            zIndex: 2
-                                                        }}
-                                                        title="Custom Solid Color"
-                                                    />
-                                                    <div style={{
-                                                        width: "28px",
-                                                        height: "28px",
-                                                        borderRadius: "50%",
-                                                        border: `2px solid ${slide.custom_bg_type === "solid" && !BACKGROUND_PRESETS.some(p => p.value === slide.custom_bg) ? colors.accent : slideBorderColor}`,
-                                                        background: "linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet)",
-                                                        zIndex: 1,
-                                                        pointerEvents: "none"
-                                                    }} />
-                                                </div>
-                                            </div>
-                                        </div>
-                                    </div>
-                                )}
 
                                 {/* Drag Drop Image Overlay */}
                                 {draggedSlideIndex === index && (
@@ -1991,6 +1686,349 @@ export default function PresentationPage() {
                             ➕ Add New Blank Slide
                         </button>
                     </div>
+
+                    {/* Right Column: Slide Edit Side Pane */}
+                    {activeSlideIndex !== null && slides[activeSlideIndex] && (() => {
+                        const slide = slides[activeSlideIndex];
+                        const index = activeSlideIndex;
+                        
+                        const hasBgImage = !!(slide.image && slide.image.position === "background" && slide.image.url);
+                        const isDark = hasBgImage || isDarkBackground(slide.custom_bg, slide.custom_bg_type, activeTheme);
+                        const slideBorderColor = isDark ? "rgba(255, 255, 255, 0.15)" : colors.border;
+                        const slideMutedColor = isDark ? "#cbd5e1" : colors.muted;
+
+                        return (
+                            <div className="no-print edit-side-pane" style={{
+                                position: "sticky",
+                                top: "110px",
+                                maxHeight: "calc(100vh - 150px)",
+                                overflowY: "auto",
+                                backgroundColor: colors.cardBg,
+                                borderRadius: "16px",
+                                border: `1px solid ${colors.border}`,
+                                padding: "24px 20px",
+                                display: "flex",
+                                flexDirection: "column",
+                                gap: "20px",
+                                boxShadow: "0 10px 15px -3px rgba(0,0,0,0.02)",
+                                width: "340px",
+                                flexShrink: 0
+                            }}>
+                                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderBottom: `1px solid ${colors.border}`, paddingBottom: "12px" }}>
+                                    <span style={{ fontSize: "0.85rem", fontWeight: 800, color: colors.accent, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                                        ✏️ Edit Slide {String(index + 1).padStart(2, "0")}
+                                    </span>
+                                    <button 
+                                        onClick={() => setActiveSlideIndex(null)}
+                                        style={{ background: "none", border: "none", color: colors.muted, cursor: "pointer", fontSize: "1.2rem", fontWeight: "bold" }}
+                                        title="Close Editor"
+                                    >
+                                        &times;
+                                    </button>
+                                </div>
+
+                                <div style={{ display: "flex", flexDirection: "column", gap: "20px" }}>
+                                    {/* Layout Type Switcher */}
+                                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                                        <span style={{ fontSize: "0.75rem", fontWeight: 800, color: slideMutedColor, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                                            Slide Layout
+                                        </span>
+                                        <select
+                                            value={slide.layout_type || "bullet_list"}
+                                            onChange={(e) => handleUpdateLayoutType(index, e.target.value as any)}
+                                            style={{
+                                                padding: "8px 12px",
+                                                fontSize: "0.85rem",
+                                                borderRadius: "8px",
+                                                backgroundColor: colors.cardBg,
+                                                color: colors.text,
+                                                border: `1.5px solid ${slideBorderColor}`,
+                                                outline: "none"
+                                            }}
+                                        >
+                                            <option value="title">Title Slide</option>
+                                            <option value="bullet_list">Bullet List</option>
+                                            <option value="two_column">Two Column</option>
+                                            <option value="timeline">Timeline</option>
+                                            <option value="comparison">Comparison Table</option>
+                                            <option value="cards">Cards Grid</option>
+                                            <option value="process_flow">Process Flow</option>
+                                            <option value="statistics">Statistics & Chart</option>
+                                            <option value="image_text">Image + Text</option>
+                                            <option value="quote">Quote Block</option>
+                                        </select>
+                                    </div>
+
+                                    {/* Subtitle Input */}
+                                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                                        <span style={{ fontSize: "0.75rem", fontWeight: 800, color: slideMutedColor, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                                            Slide Subtitle
+                                        </span>
+                                        <input
+                                            type="text"
+                                            value={slide.subtitle || ""}
+                                            onChange={(e) => handleUpdateSubtitle(index, e.target.value)}
+                                            placeholder="Sub-heading or details..."
+                                            style={{
+                                                padding: "8px 12px",
+                                                fontSize: "0.85rem",
+                                                borderRadius: "8px",
+                                                backgroundColor: colors.cardBg,
+                                                color: colors.text,
+                                                border: `1.5px solid ${slideBorderColor}`,
+                                                outline: "none"
+                                            }}
+                                        />
+                                    </div>
+
+                                    {/* Image keyword lookup */}
+                                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                                        <span style={{ fontSize: "0.75rem", fontWeight: 800, color: slideMutedColor, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                                            Image Keyword
+                                        </span>
+                                        <div style={{ display: "flex", gap: "6px" }}>
+                                            <input
+                                                type="text"
+                                                value={slide.image_search_prompt || slide.image_keyword || ""}
+                                                onChange={(e) => handleUpdateImageSearchPrompt(index, e.target.value)}
+                                                placeholder="Unsplash query keyword..."
+                                                style={{
+                                                    padding: "8px 12px",
+                                                    fontSize: "0.85rem",
+                                                    borderRadius: "8px",
+                                                    backgroundColor: colors.cardBg,
+                                                    color: colors.text,
+                                                    border: `1.5px solid ${slideBorderColor}`,
+                                                    outline: "none",
+                                                    flexGrow: 1
+                                                }}
+                                            />
+                                            <button
+                                                onClick={() => openImageSearch(index, slide.image_search_prompt || slide.image_keyword || "")}
+                                                style={{
+                                                    padding: "8px 12px",
+                                                    fontSize: "0.85rem",
+                                                    backgroundColor: colors.accent,
+                                                    color: "white",
+                                                    border: "none",
+                                                    borderRadius: "8px",
+                                                    fontWeight: "bold",
+                                                    cursor: "pointer"
+                                                }}
+                                            >
+                                                Search
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {/* Icon suggestion tags */}
+                                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                                        <span style={{ fontSize: "0.75rem", fontWeight: 800, color: slideMutedColor, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                                            Icon Suggestions
+                                        </span>
+                                        <input
+                                            type="text"
+                                            value={(slide.icon_suggestions || []).join(", ")}
+                                            onChange={(e) => handleUpdateIconSuggestions(index, e.target.value)}
+                                            placeholder="rocket, lightbulb, smile..."
+                                            style={{
+                                                padding: "8px 12px",
+                                                fontSize: "0.85rem",
+                                                borderRadius: "8px",
+                                                backgroundColor: colors.cardBg,
+                                                color: colors.text,
+                                                border: `1.5px solid ${slideBorderColor}`,
+                                                outline: "none"
+                                            }}
+                                        />
+                                    </div>
+
+                                    {/* Dynamic Specific Layout Editors */}
+                                    {slide.layout_type === "timeline" && (
+                                        <div style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "16px", backgroundColor: "rgba(0,0,0,0.02)", borderRadius: "12px", border: `1px solid ${slideBorderColor}` }}>
+                                            <span style={{ fontSize: "0.8rem", fontWeight: 800, color: colors.accent }}>📅 Edit Timeline Phases</span>
+                                            <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                                                {(slide.timeline_data || []).map((item, itemIdx) => (
+                                                    <div key={itemIdx} style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                                                        <input
+                                                            type="text"
+                                                            value={item.label}
+                                                            onChange={(e) => handleUpdateTimelineItem(index, itemIdx, "label", e.target.value)}
+                                                            placeholder="Label"
+                                                            style={{ padding: "6px 10px", fontSize: "0.8rem", borderRadius: "6px", backgroundColor: colors.cardBg, color: colors.text, border: `1px solid ${slideBorderColor}`, width: "90px" }}
+                                                        />
+                                                        <input
+                                                            type="text"
+                                                            value={item.detail || ""}
+                                                            onChange={(e) => handleUpdateTimelineItem(index, itemIdx, "detail", e.target.value)}
+                                                            placeholder="Details..."
+                                                            style={{ padding: "6px 10px", fontSize: "0.8rem", borderRadius: "6px", backgroundColor: colors.cardBg, color: colors.text, border: `1px solid ${slideBorderColor}`, flexGrow: 1, width: "110px" }}
+                                                        />
+                                                        <button onClick={() => handleDeleteTimelineItem(index, itemIdx)} style={{ border: "none", background: "none", color: "#ef4444", cursor: "pointer", fontSize: "1.1rem" }}>&times;</button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <button onClick={() => handleAddTimelineItem(index)} style={{ padding: "6px 12px", fontSize: "0.8rem", borderRadius: "6px", backgroundColor: colors.accentLight, color: colors.accent, border: "none", cursor: "pointer", fontWeight: "bold", width: "max-content", marginTop: "8px" }}>+ Add Milestone</button>
+                                        </div>
+                                    )}
+
+                                    {slide.layout_type === "comparison" && (
+                                        <div style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "16px", backgroundColor: "rgba(0,0,0,0.02)", borderRadius: "12px", border: `1px solid ${slideBorderColor}` }}>
+                                            <span style={{ fontSize: "0.8rem", fontWeight: 800, color: colors.accent }}>⚖️ Edit Comparison Matrix</span>
+                                            <div style={{ display: "flex", flexDirection: "column", gap: "8px", overflowX: "auto" }}>
+                                                {/* Table headers */}
+                                                <div style={{ display: "flex", gap: "4px" }}>
+                                                    {(slide.comparison_table?.headers || []).map((h, colIdx) => (
+                                                        <input
+                                                            key={colIdx}
+                                                            type="text"
+                                                            value={h}
+                                                            onChange={(e) => handleUpdateComparisonHeader(index, colIdx, e.target.value)}
+                                                            style={{ padding: "4px 6px", fontSize: "0.75rem", fontWeight: "bold", borderRadius: "6px", backgroundColor: colors.accentLight, color: colors.accent, border: `1px solid ${slideBorderColor}`, width: "75px" }}
+                                                        />
+                                                    ))}
+                                                </div>
+                                                {/* Table rows */}
+                                                {(slide.comparison_table?.rows || []).map((row, rIdx) => (
+                                                    <div key={rIdx} style={{ display: "flex", gap: "4px", alignItems: "center" }}>
+                                                        {row.map((cell, cIdx) => (
+                                                            <input
+                                                                key={cIdx}
+                                                                type="text"
+                                                                value={cell}
+                                                                onChange={(e) => handleUpdateComparisonCell(index, rIdx, cIdx, e.target.value)}
+                                                                style={{ padding: "4px 6px", fontSize: "0.75rem", borderRadius: "6px", backgroundColor: colors.cardBg, color: colors.text, border: `1px solid ${slideBorderColor}`, width: "75px" }}
+                                                            />
+                                                        ))}
+                                                        <button onClick={() => handleDeleteComparisonRow(index, rIdx)} style={{ border: "none", background: "none", color: "#ef4444", cursor: "pointer", fontSize: "1.1rem" }}>&times;</button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <button onClick={() => handleAddComparisonRow(index)} style={{ padding: "6px 12px", fontSize: "0.8rem", borderRadius: "6px", backgroundColor: colors.accentLight, color: colors.accent, border: "none", cursor: "pointer", fontWeight: "bold", width: "max-content", marginTop: "8px" }}>+ Add Compare Row</button>
+                                        </div>
+                                    )}
+
+                                    {slide.layout_type === "statistics" && (
+                                        <div style={{ display: "flex", flexDirection: "column", gap: "10px", padding: "16px", backgroundColor: "rgba(0,0,0,0.02)", borderRadius: "12px", border: `1px solid ${slideBorderColor}` }}>
+                                            <span style={{ fontSize: "0.8rem", fontWeight: 800, color: colors.accent }}>📊 Edit Statistics & Chart Data</span>
+                                            <div style={{ display: "flex", flexWrap: "wrap", gap: "12px", alignItems: "center" }}>
+                                                <input
+                                                    type="text"
+                                                    value={slide.chart_data?.title || ""}
+                                                    onChange={(e) => handleUpdateChartData(index, "title", e.target.value)}
+                                                    placeholder="Chart Title"
+                                                    style={{ padding: "6px 10px", fontSize: "0.8rem", borderRadius: "6px", backgroundColor: colors.cardBg, color: colors.text, border: `1px solid ${slideBorderColor}`, width: "130px" }}
+                                                />
+                                                <select
+                                                    value={slide.chart_data?.type || "bar"}
+                                                    onChange={(e) => handleUpdateChartData(index, "type", e.target.value)}
+                                                    style={{ padding: "6px 10px", fontSize: "0.8rem", borderRadius: "6px", backgroundColor: colors.cardBg, color: colors.text, border: `1px solid ${slideBorderColor}` }}
+                                                >
+                                                    <option value="bar">Bar Chart</option>
+                                                    <option value="line">Line Chart</option>
+                                                    <option value="pie">Pie Chart</option>
+                                                </select>
+                                            </div>
+                                            <div style={{ display: "flex", flexDirection: "column", gap: "8px", marginTop: "8px" }}>
+                                                {slide.chart_data?.labels.map((lbl, lblIdx) => (
+                                                    <div key={lblIdx} style={{ display: "flex", gap: "6px", alignItems: "center" }}>
+                                                        <input
+                                                            type="text"
+                                                            value={lbl}
+                                                            onChange={(e) => handleUpdateChartItem(index, lblIdx, "label", e.target.value)}
+                                                            placeholder="Label"
+                                                            style={{ padding: "6px 10px", fontSize: "0.8rem", borderRadius: "6px", backgroundColor: colors.cardBg, color: colors.text, border: `1px solid ${slideBorderColor}`, width: "80px" }}
+                                                        />
+                                                        <input
+                                                            type="number"
+                                                            value={slide.chart_data?.values[lblIdx] || 0}
+                                                            onChange={(e) => handleUpdateChartItem(index, lblIdx, "value", e.target.value)}
+                                                            placeholder="Val"
+                                                            style={{ padding: "6px 10px", fontSize: "0.8rem", borderRadius: "6px", backgroundColor: colors.cardBg, color: colors.text, border: `1px solid ${slideBorderColor}`, width: "60px" }}
+                                                        />
+                                                        <button onClick={() => handleDeleteChartItem(index, lblIdx)} style={{ border: "none", background: "none", color: "#ef4444", cursor: "pointer", fontSize: "1.1rem" }}>&times;</button>
+                                                    </div>
+                                                ))}
+                                            </div>
+                                            <button onClick={() => handleAddChartItem(index)} style={{ padding: "6px 12px", fontSize: "0.8rem", borderRadius: "6px", backgroundColor: colors.accentLight, color: colors.accent, border: "none", cursor: "pointer", fontWeight: "bold", width: "max-content", marginTop: "8px" }}>+ Add Chart Item</button>
+                                        </div>
+                                    )}
+
+                                    {/* Background Styling Preset Section */}
+                                    <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+                                        <span style={{ fontSize: "0.75rem", fontWeight: 800, color: slideMutedColor, textTransform: "uppercase", letterSpacing: "0.05em" }}>
+                                            Background Styling
+                                        </span>
+                                        <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                                            <button
+                                                onClick={() => handleUpdateSlideBackground(index, "", "theme")}
+                                                style={{
+                                                    width: "28px",
+                                                    height: "28px",
+                                                    borderRadius: "50%",
+                                                    border: `2px solid ${(!slide.custom_bg || slide.custom_bg_type === "theme") ? colors.accent : slideBorderColor}`,
+                                                    background: colors.cardBg,
+                                                    cursor: "pointer",
+                                                    position: "relative",
+                                                    transition: "all 0.2s"
+                                                }}
+                                                title="Theme Default"
+                                            >
+                                                <span style={{ fontSize: "0.6rem", color: colors.text, position: "absolute", inset: 0, display: "flex", alignItems: "center", justifyContent: "center" }}>✕</span>
+                                            </button>
+
+                                            {BACKGROUND_PRESETS.map((preset) => {
+                                                const isSelected = slide.custom_bg === preset.value && slide.custom_bg_type === preset.type;
+                                                return (
+                                                    <button
+                                                        key={preset.name}
+                                                        onClick={() => handleUpdateSlideBackground(index, preset.value, preset.type)}
+                                                        style={{
+                                                            width: "28px",
+                                                            height: "28px",
+                                                            borderRadius: "50%",
+                                                            border: `2px solid ${isSelected ? colors.accent : slideBorderColor}`,
+                                                            background: preset.value,
+                                                            cursor: "pointer",
+                                                            transition: "all 0.2s"
+                                                        }}
+                                                        title={preset.name}
+                                                    />
+                                                );
+                                            })}
+
+                                            <div style={{ position: "relative", display: "flex", alignItems: "center" }}>
+                                                <input
+                                                    type="color"
+                                                    value={slide.custom_bg_type === "solid" && slide.custom_bg?.startsWith("#") ? slide.custom_bg : "#ffffff"}
+                                                    onChange={(e) => handleUpdateSlideBackground(index, e.target.value, "solid")}
+                                                    style={{
+                                                        opacity: 0,
+                                                        position: "absolute",
+                                                        inset: 0,
+                                                        width: "28px",
+                                                        height: "28px",
+                                                        cursor: "pointer",
+                                                        zIndex: 2
+                                                    }}
+                                                    title="Custom Solid Color"
+                                                />
+                                                <div style={{
+                                                    width: "28px",
+                                                    height: "28px",
+                                                    borderRadius: "50%",
+                                                    border: `2px solid ${slide.custom_bg_type === "solid" && !BACKGROUND_PRESETS.some(p => p.value === slide.custom_bg) ? colors.accent : slideBorderColor}`,
+                                                    background: "linear-gradient(45deg, red, orange, yellow, green, blue, indigo, violet)",
+                                                    zIndex: 1,
+                                                    pointerEvents: "none"
+                                                }} />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })()}
                 </div>
             )}
             {/* Unsplash Image Search Modal Dialog */}

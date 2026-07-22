@@ -238,12 +238,14 @@ app.post("/api/export", async (req, res) => {
 
       // Render Title and Subtitle helper
       const addHeader = (yPos = 0.5) => {
+        const titleLen = slide.title ? slide.title.length : 0;
+        const titleFontSize = titleLen > 60 ? 18 : titleLen > 40 ? 20 : titleLen > 25 ? 22 : 26;
         pptxSlide.addText(slide.title, {
           x: 0.8,
           y: yPos,
           w: 8.5,
           h: 0.6,
-          fontSize: 26,
+          fontSize: titleFontSize,
           bold: true,
           color: colors.text
         });
@@ -323,12 +325,14 @@ app.post("/api/export", async (req, res) => {
       if (layout === "title") {
         // Left-align and place on side column if side image is present to prevent overlapping
         const titleAlign = hasSideImage ? ("left" as const) : ("center" as const);
+        const titleLen = slide.title ? slide.title.length : 0;
+        const titleFontSize = titleLen > 50 ? 24 : titleLen > 35 ? 28 : titleLen > 20 ? 32 : 40;
         pptxSlide.addText(slide.title, {
           x: hasSideImage ? contentX : 1.0,
           y: 2.2,
           w: hasSideImage ? contentW : 8.0,
           h: 1.2,
-          fontSize: 40,
+          fontSize: titleFontSize,
           bold: true,
           align: titleAlign,
           color: colors.text
@@ -436,7 +440,7 @@ app.post("/api/export", async (req, res) => {
                 y: contentY + 1.8,
                 w: 2.0,
                 h: 1.5,
-                fontSize: 10,
+                fontSize: 12,
                 align: "center",
                 color: colors.text
               });
@@ -476,7 +480,7 @@ app.post("/api/export", async (req, res) => {
           tableRows.push(
             cells.map(cell => ({
               text: cell !== null && cell !== undefined ? String(cell) : "",
-              options: { fill: { color: colors.cardBg }, color: colors.text, fontSize: 12, border: { type: "solid", color: colors.muted } }
+              options: { fill: { color: colors.cardBg }, color: colors.text, fontSize: 13, border: { type: "solid", color: colors.muted } }
             }))
           );
         });
@@ -529,7 +533,7 @@ app.post("/api/export", async (req, res) => {
               y: contentY + 0.8,
               w: cardW - 0.3,
               h: contentH - 1.0,
-              fontSize: 12,
+              fontSize: 14,
               color: colors.text,
               valign: "top"
             });
@@ -580,7 +584,7 @@ app.post("/api/export", async (req, res) => {
               y: contentY + 1.1,
               w: blockW - 0.2,
               h: contentH - 1.6,
-              fontSize: 11,
+              fontSize: 12,
               align: "center",
               color: colors.text,
               valign: "top"

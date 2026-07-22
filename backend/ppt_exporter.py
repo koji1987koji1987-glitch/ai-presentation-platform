@@ -13,6 +13,26 @@ def apply_text_styling(paragraph, font_name="Arial", size_pt=18, color_rgb=(51, 
     paragraph.font.bold = bold
     paragraph.font.italic = italic
 
+def apply_fit_text_styling(paragraph, font_name="Arial", size_pt=11, color_rgb=(51, 65, 85), bold=False, italic=False, text_len=0):
+    if text_len > 100:
+        actual_size = max(8, size_pt - 3)
+    elif text_len > 60:
+        actual_size = max(9, size_pt - 1.5)
+    else:
+        actual_size = size_pt
+    paragraph.font.name = font_name
+    paragraph.font.size = Pt(actual_size)
+    paragraph.font.color.rgb = RGBColor(*color_rgb)
+    paragraph.font.bold = bold
+    paragraph.font.italic = italic
+
+def get_title_font_size(title_text, is_content_slide=True):
+    title_len = len(title_text) if title_text else 0
+    if is_content_slide:
+        return 18 if title_len > 60 else 20 if title_len > 40 else 22 if title_len > 25 else 24
+    else:
+        return 24 if title_len > 50 else 28 if title_len > 35 else 32 if title_len > 20 else 40
+
 def hex_to_rgb(hex_str):
     hex_str = hex_str.lstrip('#')
     if len(hex_str) == 3:
@@ -148,8 +168,10 @@ THEME_PALETTES = {
 def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate", x_shift=Inches(0), custom_palette=None):
     text = (suggestion or "").lower()
     
-    # Helper to truncate text inside shapes
-    def trunc(s, max_len=30):
+    # Helper to truncate text inside shapes (increased limit)
+    def trunc(s, max_len=180):
+        if not s:
+            return ""
         return s[:max_len] + "..." if len(s) > max_len else s
 
     if custom_palette:
@@ -185,8 +207,9 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate", x
                 
                 if item.get("detail"):
                     p2 = tf.add_paragraph()
-                    p2.text = trunc(item["detail"], 70)
-                    apply_text_styling(p2, font_name="Arial", size_pt=9, color_rgb=text_dark_rgb)
+                    detail_text = trunc(item["detail"], 180)
+                    p2.text = detail_text
+                    apply_fit_text_styling(p2, font_name="Arial", size_pt=11, color_rgb=text_dark_rgb, text_len=len(detail_text))
                     
                 top_offset += Inches(0.9)
                 
@@ -225,8 +248,9 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate", x
                 
                 if item.get("detail"):
                     p2 = tf.add_paragraph()
-                    p2.text = trunc(item["detail"], 70)
-                    apply_text_styling(p2, font_name="Arial", size_pt=8.5, color_rgb=text_dark_rgb)
+                    detail_text = trunc(item["detail"], 180)
+                    p2.text = detail_text
+                    apply_fit_text_styling(p2, font_name="Arial", size_pt=11, color_rgb=text_dark_rgb, text_len=len(detail_text))
                     
                 top_offset += Inches(1.1)
             return
@@ -270,8 +294,9 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate", x
                 
                 if item.get("detail"):
                     p2 = tf.add_paragraph()
-                    p2.text = trunc(item["detail"], 40)
-                    apply_text_styling(p2, font_name="Arial", size_pt=8, color_rgb=text_dark_rgb)
+                    detail_text = trunc(item["detail"], 150)
+                    p2.text = detail_text
+                    apply_fit_text_styling(p2, font_name="Arial", size_pt=11, color_rgb=text_dark_rgb, text_len=len(detail_text))
             return
 
         # 4. Mind Map
@@ -335,8 +360,9 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate", x
             apply_text_styling(p_l, font_name="Arial", size_pt=9, color_rgb=RGBColor(34, 197, 94), bold=True)
             if yes_item.get("detail"):
                 p_ld = tf_l.add_paragraph()
-                p_ld.text = trunc(yes_item["detail"], 45)
-                apply_text_styling(p_ld, font_name="Arial", size_pt=8, color_rgb=text_dark_rgb)
+                detail_text = trunc(yes_item["detail"], 150)
+                p_ld.text = detail_text
+                apply_fit_text_styling(p_ld, font_name="Arial", size_pt=11, color_rgb=text_dark_rgb, text_len=len(detail_text))
                 
             no_item = next((it for it in items if it.get("category") == "no"), items[1] if len(items) > 1 else (items[0] if items else {}))
             right_card = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(10.6) + x_shift, Inches(3.6), Inches(1.8), Inches(1.4))
@@ -351,8 +377,9 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate", x
             apply_text_styling(p_r, font_name="Arial", size_pt=9, color_rgb=RGBColor(239, 68, 68), bold=True)
             if no_item.get("detail"):
                 p_rd = tf_r.add_paragraph()
-                p_rd.text = trunc(no_item["detail"], 45)
-                apply_text_styling(p_rd, font_name="Arial", size_pt=8, color_rgb=text_dark_rgb)
+                detail_text = trunc(no_item["detail"], 150)
+                p_rd.text = detail_text
+                apply_fit_text_styling(p_rd, font_name="Arial", size_pt=11, color_rgb=text_dark_rgb, text_len=len(detail_text))
             return
 
         # 6. System Architecture
@@ -375,8 +402,9 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate", x
                 
                 if item.get("detail"):
                     p2 = tf.add_paragraph()
-                    p2.text = trunc(item["detail"], 60)
-                    apply_text_styling(p2, font_name="Arial", size_pt=8, color_rgb=fg_rgb)
+                    detail_text = trunc(item["detail"], 180)
+                    p2.text = detail_text
+                    apply_fit_text_styling(p2, font_name="Arial", size_pt=11, color_rgb=fg_rgb, text_len=len(detail_text))
                     
                 top_offset += Inches(0.85)
                 if i < 2:
@@ -457,8 +485,9 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate", x
                 
                 if item.get("detail"):
                     p_b = tf.add_paragraph()
-                    p_b.text = trunc(item["detail"], 60)
-                    apply_text_styling(p_b, font_name="Arial", size_pt=8.5, color_rgb=text_dark_rgb)
+                    detail_text = trunc(item["detail"], 150)
+                    p_b.text = detail_text
+                    apply_fit_text_styling(p_b, font_name="Arial", size_pt=11, color_rgb=text_dark_rgb, text_len=len(detail_text))
             return
 
     # --- Legacy Fallback logic ---
@@ -474,8 +503,9 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate", x
             tf = shape.text_frame
             tf.word_wrap = True
             p = tf.paragraphs[0]
-            p.text = f"Step {i+1}: {trunc(point, 40)}"
-            apply_text_styling(p, font_name="Arial", size_pt=11, color_rgb=text_dark_rgb, bold=True)
+            detail_text = trunc(point, 150)
+            p.text = f"Step {i+1}: {detail_text}"
+            apply_fit_text_styling(p, font_name="Arial", size_pt=12, color_rgb=text_dark_rgb, bold=True, text_len=len(detail_text))
             
             top_offset += Inches(0.8)
             
@@ -513,8 +543,9 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate", x
             tf = card.text_frame
             tf.word_wrap = True
             p = tf.paragraphs[0]
-            p.text = trunc(point, 45)
-            apply_text_styling(p, font_name="Arial", size_pt=10, color_rgb=text_dark_rgb)
+            detail_text = trunc(point, 150)
+            p.text = detail_text
+            apply_fit_text_styling(p, font_name="Arial", size_pt=11, color_rgb=text_dark_rgb, text_len=len(detail_text))
             
             top_offset += Inches(1.1)
         return
@@ -557,8 +588,9 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate", x
             tf = card.text_frame
             tf.word_wrap = True
             p = tf.paragraphs[0]
-            p.text = f"Div {i+1}:\n{trunc(point, 18)}"
-            apply_text_styling(p, font_name="Arial", size_pt=9, color_rgb=text_dark_rgb)
+            detail_text = trunc(point, 100)
+            p.text = f"Div {i+1}:\n{detail_text}"
+            apply_fit_text_styling(p, font_name="Arial", size_pt=11, color_rgb=text_dark_rgb, text_len=len(detail_text))
         return
 
     # 4. Mind Map
@@ -592,8 +624,9 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate", x
             tf = node.text_frame
             tf.word_wrap = True
             p = tf.paragraphs[0]
-            p.text = trunc(point, 25)
-            apply_text_styling(p, font_name="Arial", size_pt=9, color_rgb=text_dark_rgb)
+            detail_text = trunc(point, 100)
+            p.text = detail_text
+            apply_fit_text_styling(p, font_name="Arial", size_pt=11, color_rgb=text_dark_rgb, text_len=len(detail_text))
         return
 
     # 5. Decision Tree
@@ -616,8 +649,9 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate", x
         tf_l = left_card.text_frame
         tf_l.word_wrap = True
         p_l = tf_l.paragraphs[0]
-        p_l.text = f"[YES BRANCH]\n{trunc(content[0] if len(content) > 0 else 'Action A', 24)}"
-        apply_text_styling(p_l, font_name="Arial", size_pt=9, color_rgb=text_dark_rgb)
+        yes_text = trunc(content[0] if len(content) > 0 else 'Action A', 100)
+        p_l.text = f"[YES BRANCH]\n{yes_text}"
+        apply_fit_text_styling(p_l, font_name="Arial", size_pt=11, color_rgb=text_dark_rgb, text_len=len(yes_text))
         
         # NO card (Red border)
         right_card = slide.shapes.add_shape(MSO_SHAPE.ROUNDED_RECTANGLE, Inches(10.6) + x_shift, Inches(3.8), Inches(1.8), Inches(1.2))
@@ -628,8 +662,9 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate", x
         tf_r = right_card.text_frame
         tf_r.word_wrap = True
         p_r = tf_r.paragraphs[0]
-        p_r.text = f"[NO BRANCH]\n{trunc(content[1] if len(content) > 1 else 'Action B', 24)}"
-        apply_text_styling(p_r, font_name="Arial", size_pt=9, color_rgb=text_dark_rgb)
+        no_text = trunc(content[1] if len(content) > 1 else 'Action B', 100)
+        p_r.text = f"[NO BRANCH]\n{no_text}"
+        apply_fit_text_styling(p_r, font_name="Arial", size_pt=11, color_rgb=text_dark_rgb, text_len=len(no_text))
         return
 
     # 6. System Architecture (3-tier stack)
@@ -650,8 +685,9 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate", x
             tf.word_wrap = True
             p = tf.paragraphs[0]
             desc = content[i] if len(content) > i else "System components layer"
-            p.text = f"{label}: {trunc(desc, 30)}"
-            apply_text_styling(p, font_name="Arial", size_pt=10, color_rgb=fg_rgb, bold=True)
+            desc_text = trunc(desc, 120)
+            p.text = f"{label}: {desc_text}"
+            apply_fit_text_styling(p, font_name="Arial", size_pt=11, color_rgb=fg_rgb, bold=True, text_len=len(desc_text))
             
             top_offset += Inches(0.8)
             if i < 2:
@@ -728,8 +764,9 @@ def draw_diagram(slide, suggestion, content, diagram=None, theme_name="slate", x
             p_h.space_after = Pt(4)
             
             p_b = tf.add_paragraph()
-            p_b.text = trunc(point, 50)
-            apply_text_styling(p_b, font_name="Arial", size_pt=9, color_rgb=text_dark_rgb)
+            detail_text = trunc(point, 150)
+            p_b.text = detail_text
+            apply_fit_text_styling(p_b, font_name="Arial", size_pt=11, color_rgb=text_dark_rgb, text_len=len(detail_text))
         return
 
     # Default fallback: visual layout suggestion textbox
@@ -890,7 +927,8 @@ def main():
             tf_title.word_wrap = True
             p_title = tf_title.paragraphs[0]
             p_title.text = title_text
-            apply_text_styling(p_title, font_name="Georgia", size_pt=title_size, color_rgb=slide_colors["text"], bold=True)
+            title_slide_size = get_title_font_size(title_text, is_content_slide=False)
+            apply_text_styling(p_title, font_name="Georgia", size_pt=title_slide_size, color_rgb=slide_colors["text"], bold=True)
             
             # Render Subtitle (Content points)
             if content_points:
@@ -906,7 +944,8 @@ def main():
             tf_title.word_wrap = True
             p_title = tf_title.paragraphs[0]
             p_title.text = title_text
-            apply_text_styling(p_title, font_name="Georgia", size_pt=24, color_rgb=slide_colors["text"], bold=True)
+            content_title_size = get_title_font_size(title_text, is_content_slide=True)
+            apply_text_styling(p_title, font_name="Georgia", size_pt=content_title_size, color_rgb=slide_colors["text"], bold=True)
             
             # Determine alternating columns for PPT Designer layout
             is_even_slide = (idx % 2 == 0)
